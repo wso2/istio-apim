@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wso2adapterservice
+  namespace: istio-system
+  labels:
+    app: wso2adapter
+spec:
+  type: ClusterIP
+  ports:
+  - name: grpc
+    protocol: TCP
+    port: 44225
+    targetPort: 44225
+  selector:
+    app: wso2adapter
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wso2adapter
+  namespace: istio-system
+  labels:
+    app: wso2adapter
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: wso2adapter
+      annotations:
+        sidecar.istio.io/inject: "false"
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+    spec:
+      containers:
+      - name: wso2adapter
+        image: wso2/wso2adapter:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 44225
+        volumeMounts:
+        - name: server-cert-volume
+          mountPath: "/etc/server-cert"
+          readOnly: true
+        - name: client-cert-volume
+          mountPath: "/etc/client-cert"
+          readOnly: true
+        - name: client-key-volume
+          mountPath: "/etc/client-key"
+          readOnly: true
+      volumes:
+        - name: server-cert-volume
+          secret:
+            secretName: server-cert
+        - name: client-cert-volume
+          secret:
+            secretName: client-cert
+        - name: client-key-volume
+          secret:
+            secretName: client-key
