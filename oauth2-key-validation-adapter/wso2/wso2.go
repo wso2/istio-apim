@@ -19,30 +19,18 @@
 // names (metric in this case), and whether it is session or no-session based.
 //go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -a mixer/adapter/wso2/config/config.proto -x "-s=false -n wso2 -t authorization"
 
-
 package wso2
 
 import (
 	"context"
-	"net"
-	"bytes"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
-	logf "log"
-	"net/http"
-	"os"
 	"google.golang.org/grpc"
 	"istio.io/api/mixer/adapter/model/v1beta1"
-	policy "istio.io/api/policy/v1beta1"
-	"istio.io/istio/mixer/adapter/wso2/config"
 	"istio.io/istio/mixer/pkg/status"
 	"istio.io/istio/mixer/template/authorization"
 	"istio.io/istio/pkg/log"
+	"net"
 )
-
 
 type (
 	// Server is basic server interface
@@ -59,13 +47,23 @@ type (
 	}
 )
 
-
 var _ authorization.HandleAuthorizationServiceServer = &Wso2{}
 
 // HandleMetric records metric entries
 func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleAuthorizationRequest) (*v1beta1.CheckResult, error) {
+	result := KeyValidation("", "", "", "", "", "")
 
+	if result == "true" {
+		log.Infof("success!!")
+		return &v1beta1.CheckResult{
+			Status: status.OK,
+		}, nil
+	}
 
+	log.Infof("Failure..")
+	return &v1beta1.CheckResult{
+		Status: status.WithPermissionDenied("Unauthorized..."),
+	}, nil
 }
 
 // Addr returns the listening address of the server
