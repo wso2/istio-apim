@@ -25,11 +25,15 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"io/ioutil"
+	policy "istio.io/api/policy/v1beta1"
 	"istio.io/api/mixer/adapter/model/v1beta1"
+	"istio.io/istio/mixer/adapter/wso2/config"
 	"istio.io/istio/mixer/pkg/status"
 	"istio.io/istio/mixer/template/authorization"
 	"istio.io/istio/pkg/log"
 	"net"
+	"strings"
 )
 
 type (
@@ -44,14 +48,59 @@ type (
 	Wso2 struct {
 		listener net.Listener
 		server   *grpc.Server
+		serverToken  string
+		caCert  []byte
+		apimUrl  string
 	}
 )
 
 var _ authorization.HandleAuthorizationServiceServer = &Wso2{}
 
-// HandleMetric records metric entries
+// Handle authorization
 func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleAuthorizationRequest) (*v1beta1.CheckResult, error) {
-	result := KeyValidation("", "", "", "", "", "")
+
+	cfg := &config.Params{}
+
+	if r.AdapterConfig != nil {
+		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
+			log.Errorf("Error while unmarshalling adapter config: %v", err)
+			return nil, err
+		}
+	}
+
+	serverToken := cfg.ServerAuthSchema + " " + s.serverToken
+
+	decodeValue := func(in interface{}) interface{} {
+		switch t := in.(type) {
+		case *policy.Value_StringValue:
+			return t.StringValue
+		case *policy.Value_Int64Value:
+			return t.Int64Value
+		case *policy.Value_DoubleValue:
+			return t.DoubleValue
+		default:
+			return fmt.Sprintf("%v", in)
+		}
+	}
+
+	decodeValueMap := func(in map[string]*policy.Value) map[string]interface{} {
+		out := make(map[string]interface{}, len(in))
+		for k, v := range in {
+			out[k] = decodeValue(v.GetValue())
+		}
+		return out
+	}
+
+	props := decodeValueMap(r.Instance.Subject.Properties)
+
+	authHeaderValue := props["auth_header_value"].(string)
+	requestMethod := props["request_method"].(string)
+	requestPath := props["request_path"].(string)
+
+	headerValues := strings.Split(authHeaderValue, " ")
+	accessToken := headerValues[1]
+
+	result := KeyValidationHandler(serverToken, accessToken, s.caCert, s.apimUrl, requestPath, requestMethod)
 
 	if result == "true" {
 		log.Infof("success!!")
@@ -98,8 +147,33 @@ func NewWso2(addr string) (Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
 	}
+
+	//reading the server cert file
+	caCert, err := ioutil.ReadFile("/etc/wso2/server-cert/server.cer.pem")
+	if err != nil {
+		log.Fatalf("Error in reading the Server Cert file: ", err)
+		return nil, err
+	}
+
+	//reading the server cert file
+	serverToken, err := ioutil.ReadFile("/etc/wso2/server-credentials/server-token")
+	if err != nil {
+		log.Fatalf("Error in reading the server token: ", err)
+		return nil, err
+	}
+
+	//reading the server cert file
+	apimUrl, err := ioutil.ReadFile("/etc/wso2/server-credentials/apim-url")
+	if err != nil {
+		log.Fatalf("Error in reading the Server Cert file: ", err)
+		return nil, err
+	}
+
 	s := &Wso2{
 		listener: listener,
+		serverToken: string(serverToken),
+		caCert: caCert,
+		apimUrl: string(apimUrl),
 	}
 	fmt.Printf("listening on \"%v\"\n", s.Addr())
 	s.server = grpc.NewServer()

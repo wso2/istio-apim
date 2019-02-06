@@ -9,7 +9,7 @@ option go_package="config";
 
 // config for wso2
 message Params {
-  
-    // apim url for key validation
-    string apim_url = 1;
+
+    // wso2 server auth schema
+    string server_auth_schema = 1;
 }

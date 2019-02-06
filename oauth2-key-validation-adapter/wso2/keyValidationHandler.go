@@ -88,31 +88,19 @@ type ValidateResponseBody struct {
 	} `xml:"Body"`
 }
 
-const url = "/services/APIKeyValidationService.APIKeyValidationServiceHttpsSoap12Endpoint"
+const soapServiceUrl = "/services/APIKeyValidationService.APIKeyValidationServiceHttpsSoap12Endpoint"
 const version = "http://www.w3.org/2003/05/soap-envelope"
 const soapDefinition = "http://org.apache.axis2/xsd"
 
-func KeyValidation(serverToken string, accessToken string, serverCertPath string, apimUrl string, path string, httpVerb string) (result string) {
+func KeyValidationHandler(serverToken string, accessToken string, serverCert []byte, apimUrl string, path string, httpVerb string) (result string) {
 
 	tlsConfig := tls.Config{}
-
-	//reading the server cert file
-	caCert, err := ioutil.ReadFile(serverCertPath)
-	if err != nil {
-		log.Fatalf("Error in reading the Server Cert file: ", err)
-	}
-
 	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	caCertPool.AppendCertsFromPEM(serverCert)
 	tlsConfig.RootCAs = caCertPool
-
 	tlsConfig.BuildNameToCertificate()
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	url := apimUrl + url; //endpoint URL
+	url := apimUrl + soapServiceUrl //apim endpoint URL
 	name := &RequestData{Version: version, Var2: soapDefinition}
 	name.Svs = append(name.Svs, soapBody{"/pizzashack/1.0.0", "1.0.0", accessToken, "Any", "?", "/menu", httpVerb})
 
@@ -121,7 +109,7 @@ func KeyValidation(serverToken string, accessToken string, serverCertPath string
 		log.Println("Error in creating the soap request: ", err)
 	}
 
-	//new client
+	//http client initialization
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{

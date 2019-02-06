@@ -27,8 +27,7 @@ spec:
    address: "wso2adapterservice:44225"
    #address: "35.184.34.117:44225"
  params:
-   # auth_key: "abc"
-   apim_url: "https://wso2apim-with-analytics-apim-service:9443"
+   server_auth_schema: "Basic"
 ---
 apiVersion: "config.istio.io/v1alpha2"
 kind: instance
@@ -40,12 +39,10 @@ spec:
  params:
    subject:
      properties:
-       custom_token_header:  request.headers["x-custom-token"]
-       # custom_token_header2:  request.method
-       # custom_token_header3:  request.path
-       # custom_token_header4:  request.headers["authorization"]
+       request_method:  request.method
+       request_path:  request.path
+       auth_header_value:  request.headers["authorization"]
 ---
-
 # rule to dispatch to handler h1
 apiVersion: "config.istio.io/v1alpha2"
 kind: rule

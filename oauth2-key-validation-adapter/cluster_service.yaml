@@ -1,4 +1,14 @@
 apiVersion: v1
+kind: Secret
+metadata:
+  name: wso2server-secret
+  namespace: istio-system
+type: Opaque
+stringData:
+  apim-url: https://wso2apim-with-analytics-apim-service.wso2.svc:9443
+  server-token: YWRtaW46YWRtaW4=
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: wso2adapterservice
@@ -34,27 +44,21 @@ spec:
     spec:
       containers:
       - name: wso2adapter
-        image: wso2/wso2adapter:latest
-        imagePullPolicy: IfNotPresent
+        image: pubudu/wso2adapter:v1
+        imagePullPolicy: Always
         ports:
         - containerPort: 44225
         volumeMounts:
         - name: server-cert-volume
-          mountPath: "/etc/server-cert"
+          mountPath: "/etc/wso2/server-cert"
           readOnly: true
-        - name: client-cert-volume
-          mountPath: "/etc/client-cert"
-          readOnly: true
-        - name: client-key-volume
-          mountPath: "/etc/client-key"
+        - name: wso2server-secret-volume
+          mountPath: "/etc/wso2/server-credentials"
           readOnly: true
       volumes:
         - name: server-cert-volume
           secret:
             secretName: server-cert
-        - name: client-cert-volume
+        - name: wso2server-secret-volume
           secret:
-            secretName: client-cert
-        - name: client-key-volume
-          secret:
-            secretName: client-key
+            secretName: wso2server-secret
