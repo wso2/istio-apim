@@ -1,0 +1,78 @@
+# Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wso2server-secret
+  namespace: istio-system
+type: Opaque
+stringData:
+  apim-url: https://wso2apim-with-analytics-apim-service.wso2.svc:9443
+  server-token: YWRtaW46YWRtaW4=
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wso2adapterservice
+  namespace: istio-system
+  labels:
+    app: wso2adapter
+spec:
+  type: ClusterIP
+  ports:
+  - name: grpc
+    protocol: TCP
+    port: 44225
+    targetPort: 44225
+  selector:
+    app: wso2adapter
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wso2adapter
+  namespace: istio-system
+  labels:
+    app: wso2adapter
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: wso2adapter
+      annotations:
+        sidecar.istio.io/inject: "false"
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+    spec:
+      containers:
+      - name: wso2adapter
+        image: pubudu/wso2adapter:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 44225
+        volumeMounts:
+        - name: server-cert-volume
+          mountPath: "/etc/wso2/server-cert"
+          readOnly: true
+        - name: wso2server-secret-volume
+          mountPath: "/etc/wso2/server-credentials"
+          readOnly: true
+      volumes:
+        - name: server-cert-volume
+          secret:
+            secretName: server-cert
+        - name: wso2server-secret-volume
+          secret:
+            secretName: wso2server-secret

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+// config for wso2
+package adapter.wso2.config;
+
+import "gogoproto/gogo.proto";
+
+option go_package="config";
+
+// config for wso2
+message Params {
+
+    // wso2 server auth schema
+    string server_auth_schema = 1;
+}

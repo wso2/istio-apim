@@ -1,0 +1,57 @@
+# Copyright (c)  WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+#
+# WSO2 Inc. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file   except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# handler for adapter wso2
+apiVersion: "config.istio.io/v1alpha2"
+kind: handler
+metadata:
+ name: h1
+ namespace: istio-system
+spec:
+ adapter: wso2
+ connection:
+   #address: "[::]:44225"
+   address: "wso2adapterservice:44225"
+   #address: "35.184.34.117:44225"
+ params:
+   server_auth_schema: "Basic"
+---
+apiVersion: "config.istio.io/v1alpha2"
+kind: instance
+metadata:
+ name: icheck
+ namespace: istio-system
+spec:
+ template: authorization
+ params:
+   subject:
+     properties:
+       request_method:  request.method
+       request_path:  request.path
+       auth_header_value:  request.headers["authorization"]
+---
+# rule to dispatch to handler h1
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+ name: r1
+ namespace: istio-system
+spec:
+ actions:
+ - handler: h1.istio-system
+   instances:
+   - icheck
+---
