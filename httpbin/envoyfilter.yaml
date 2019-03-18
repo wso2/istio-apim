@@ -1,0 +1,36 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: ext-authz
+spec:
+  workloadLabels:
+    app: httpbin
+  filters:
+  - listenerMatch:
+      portNumber: 8000
+      listenerType: SIDECAR_INBOUND
+    filterName: envoy.ext_authz
+    filterType: HTTP
+    filterConfig:
+      http_service:
+        server_uri:
+          uri: http://wso2apim-with-analytics-apim-service.wso2.svc:9763
+          cluster: outbound|9763||wso2apim-with-analytics-apim-service.wso2.svc
+          timeout: 0.25s
+          # failure_mode_allow: false
+        path_prefix: /oauth2/introspect
+        # authorization_headers_to_add: 
+        # - key: "pub1"
+        #   value: "test"
+        allowed_request_headers: ["foo1","authorization","foo34","bar43"]
+        # authorization_request: 
+        #   allowed_headers: 
+        #     patterns: 
+        #     - exact: baz
+        #     - prefix: x-
+        #   headers_to_add:
+        #   - key: foo34
+        #     value: bar43
+        #   - key: bar43
+        #     value: foo43
+        authorization_headers_to_add: [{"key": "foo34", "value": "bar43"}]

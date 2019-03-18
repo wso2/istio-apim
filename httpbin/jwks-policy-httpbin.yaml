@@ -1,0 +1,16 @@
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "wso2-jwks-policy"
+  namespace: default
+spec:
+  targets:
+  - name: httpbin
+  peers:
+  - mtls: 
+      mode: PERMISSIVE
+  origins:
+  - jwt:
+      issuer: "https://localhost:9443/oauth2/token"
+      jwksUri: "http://wso2apim-with-analytics-apim-service.wso2.svc:9763/oauth2/jwks"
+  principalBinding: USE_ORIGIN
