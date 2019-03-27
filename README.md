@@ -50,9 +50,8 @@ Using WSO2 adapter, users can validate JWT tokens along with the API subscriptio
 
 #### Prerequisites
 
-- Istio 
-- WSO2 API Manager 2.5.0 or above 
-- Public certificate of WSO2 API Manager
+- Istio 1.1 or above
+- WSO2 API Manager 2.5.0 or above
 
 Notes: 
 
