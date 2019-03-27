@@ -39,3 +39,67 @@ Let us now see how service calls work with this solution and at which point API 
 6. Since in this case there are no policy validation failures the request is routed to the microservice.
 7. The microservice executes the service logic and sends the response.
 8. The response is sent out to the client.
+
+---
+
+## Istio mixer adapter for WSO2 API Manager
+
+Using WSO2 adapter, users can validate JWT tokens along with the API subscriptions.
+
+### Deploy wso2 adapter as a cluster service
+
+#### Prerequisites
+
+- Istio 
+- WSO2 API Manager running in anywhere
+- Public certificate of WSO2 API Manager
+
+Note: Docker image is available in the docker hub.
+
+##### 1. Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
+```
+kubectl create secret generic server-cert --from-file=./server.pem -n istio-system
+```
+##### 2. Deploy the wso2-adapter as a cluster service
+```
+kubectl create -f samples/adapter-artifacts/
+```
+##### 3. Create and publish an API in WSO2 API Manager Publisher
+
+If you are exposing a service called httpbin, you can create and publish an API with the name httpbinAPI 
+in WSO2 API Manager.
+
+##### 4. Update the API name, version and service for subscription validation
+
+```
+Open the samples/api.yaml and update api name, version and the service mesh service which needs to map the API and the service.
+
+Then deploy the api as follows.
+
+kubectl create -f samples/api.yaml
+
+```
+
+##### 5. Deploy the rule to apply the mixer adapter for incoming requests
+
+```
+This rule applies for any incoming request in the default namespace. 
+
+kubectl create -f samples/rule.yaml
+```
+
+##### 6. Create an application in WSO2 API Manager Store, subscribe to the API and generate an access token
+
+```
+- Create an application and select JWT for the Token Type.
+- Subscribe to the API by selecting the application recreated
+- Generate an access token
+```
+
+##### 7. Access the Service 
+
+When accessing the service, provide a header as follows.
+
+```
+curl http://${INGRESS_GATEWAY_URL}/ -H "Authorization: Bearer ACCESS_TOKEN"
+```
