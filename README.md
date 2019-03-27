@@ -59,6 +59,8 @@ Note: Docker image is available in the docker hub.
 ##### 1. Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
 ```
 kubectl create secret generic server-cert --from-file=./server.pem -n istio-system
+
+Note: Save the WSO2 server certificate in PEM format in a file called server.pem
 ```
 ##### 2. Deploy the wso2-adapter as a cluster service
 ```
@@ -72,7 +74,11 @@ in WSO2 API Manager.
 ##### 4. Update the API name, version and service for subscription validation
 
 ```
-Open the samples/api.yaml and update api name, version and the service mesh service which needs to map the API and the service.
+Open the samples/api.yaml and update the following.
+
+- api.service
+- api.version
+- service 
 
 Then deploy the api as follows.
 
