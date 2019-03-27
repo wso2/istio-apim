@@ -18,7 +18,7 @@
 apiVersion: "config.istio.io/v1alpha2"
 kind: handler
 metadata:
- name: h1
+ name: wso2-handler
  namespace: istio-system
 spec:
  adapter: wso2
@@ -27,31 +27,18 @@ spec:
    address: "wso2adapterservice:44225"
    #address: "35.184.34.117:44225"
  params:
-   server_auth_schema: "Basic"
+   validate_subscription: "true"
 ---
 apiVersion: "config.istio.io/v1alpha2"
 kind: instance
 metadata:
- name: icheck
+ name: wso2-authorization
  namespace: istio-system
 spec:
  template: authorization
  params:
    subject:
      properties:
-       request_method:  request.method
-       request_path:  request.path
        auth_header_value:  request.headers["authorization"]
----
-# rule to dispatch to handler h1
-apiVersion: "config.istio.io/v1alpha2"
-kind: rule
-metadata:
- name: r1
- namespace: istio-system
-spec:
- actions:
- - handler: h1.istio-system
-   instances:
-   - icheck
----
+       api_name: api.service | ""
+       api_version: api.version | ""

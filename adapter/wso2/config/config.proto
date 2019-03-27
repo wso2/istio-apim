@@ -10,6 +10,6 @@ option go_package="config";
 // config for wso2
 message Params {
 
-    // wso2 server auth schema
-    string server_auth_schema = 1;
+    // enable subscription validation
+    string validate_subscription = 1;
 }

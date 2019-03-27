@@ -16,7 +16,7 @@
 
 // nolint:lll
 // Generates the wso2 adapter's resource yaml. It contains the adapter's configuration, name, supported template
-// names (metric in this case), and whether it is session or no-session based.
+// names (Authorization in this case), and whether it is session or no-session based.
 //go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -a mixer/adapter/wso2/config/config.proto -x "-s=false -n wso2 -t authorization"
 
 package wso2
@@ -48,9 +48,7 @@ type (
 	Wso2 struct {
 		listener net.Listener
 		server   *grpc.Server
-		serverToken  string
 		caCert  []byte
-		apimUrl  string
 	}
 )
 
@@ -68,7 +66,6 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 		}
 	}
 
-	serverToken := cfg.ServerAuthSchema + " " + s.serverToken
 
 	decodeValue := func(in interface{}) interface{} {
 		switch t := in.(type) {
@@ -94,15 +91,50 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 	props := decodeValueMap(r.Instance.Subject.Properties)
 
 	authHeaderValue := props["auth_header_value"].(string)
-	requestMethod := props["request_method"].(string)
-	requestPath := props["request_path"].(string)
+	apiName := props["api_name"].(string)
+	apiVersion := props["api_version"].(string)
 
+
+	if len(strings.TrimSpace(authHeaderValue)) == 0 {
+
+		log.Infof("Failure.. due to missing credentials")
+		return &v1beta1.CheckResult{
+			Status: status.WithUnauthenticated("Missing Credentials..."),
+		}, nil
+	}
 	headerValues := strings.Split(authHeaderValue, " ")
+
+	if len(headerValues) < 2 {
+
+		log.Infof("Failure.. due to invalid credentials")
+		return &v1beta1.CheckResult{
+			Status: status.WithUnauthenticated("Missing Credentials..."),
+		}, nil
+	}
+
 	accessToken := headerValues[1]
+	validateSubscription := cfg.ValidateSubscription
 
-	result := KeyValidationHandler(serverToken, accessToken, s.caCert, s.apimUrl, requestPath, requestMethod)
+	result, err := HandleJWT(validateSubscription, apiName, apiVersion, s.caCert, accessToken)
 
-	if result == "true" {
+	if err != nil {
+		log.Errorf("Error while handling the JWT")
+
+		if err == UnauthorizedError {
+			return &v1beta1.CheckResult{
+				Status: status.WithUnauthenticated("Unauthorized!"),
+			}, nil
+
+		} else {
+			return &v1beta1.CheckResult{
+				Status: status.WithPermissionDenied(err.Error()),
+			}, nil
+		}
+
+	}
+
+
+	if result {
 		log.Infof("success!!")
 		return &v1beta1.CheckResult{
 			Status: status.OK,
@@ -149,33 +181,18 @@ func NewWso2(addr string) (Server, error) {
 	}
 
 	//reading the server cert file
-	caCert, err := ioutil.ReadFile("/etc/wso2/server-cert/server.cer.pem")
+	caCert, err := ioutil.ReadFile("/etc/wso2/server-cert/server.pem")
 	if err != nil {
 		log.Fatalf("Error in reading the Server Cert file: ", err)
 		return nil, err
 	}
 
-	//reading the server cert file
-	serverToken, err := ioutil.ReadFile("/etc/wso2/server-credentials/server-token")
-	if err != nil {
-		log.Fatalf("Error in reading the server token: ", err)
-		return nil, err
-	}
-
-	//reading the server cert file
-	apimUrl, err := ioutil.ReadFile("/etc/wso2/server-credentials/apim-url")
-	if err != nil {
-		log.Fatalf("Error in reading the Server Cert file: ", err)
-		return nil, err
-	}
 
 	s := &Wso2{
 		listener: listener,
-		serverToken: string(serverToken),
 		caCert: caCert,
-		apimUrl: string(apimUrl),
 	}
-	fmt.Printf("listening on \"%v\"\n", s.Addr())
+	log.Infof("listening on \"%v\"\n", s.Addr())
 	s.server = grpc.NewServer()
 	authorization.RegisterHandleAuthorizationServiceServer(s.server, s)
 	return s, nil
