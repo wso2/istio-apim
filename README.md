@@ -51,10 +51,13 @@ Using WSO2 adapter, users can validate JWT tokens along with the API subscriptio
 #### Prerequisites
 
 - Istio 
-- WSO2 API Manager running in anywhere
+- WSO2 API Manager 2.5.0 or above 
 - Public certificate of WSO2 API Manager
 
-Note: Docker image is available in the docker hub.
+Notes: 
+
+- The docker image of the WSO2 mixer adapter is available in the docker hub.
+- In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explictly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 
 ##### 1. Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
 ```
@@ -108,4 +111,12 @@ When accessing the service, provide a header as follows.
 
 ```
 curl http://${INGRESS_GATEWAY_URL}/ -H "Authorization: Bearer ACCESS_TOKEN"
+```
+
+##### 8. Cleanup
+
+
+```
+kubectl delete -f samples/ -R
+kubectl delete secrets server-cert -n istio-system
 ```

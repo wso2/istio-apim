@@ -51,7 +51,7 @@ spec:
     spec:
       containers:
       - name: wso2adapter
-        image: pubudu/wso2adapter:v4
+        image: pubudu/wso2adapter:0.5
         imagePullPolicy: Always
         ports:
         - containerPort: 44225

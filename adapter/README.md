@@ -81,10 +81,10 @@ cp  $ROOT_FOLDER/wso2/cmd/main.go $MIXER_REPO/adapter/wso2/cmd/
 ```
 cd $ROOT_FOLDER
 
-docker build -t pubudu/wso2adapter:v4 .
+docker build -t pubudu/wso2adapter:0.5 .
 ```
 
-Push this to a docker registry which can be accessed from the Kubernetes cluster.
+Note: Push this docker image to a docker registry which can be accessed from the Kubernetes cluster.
 
 ##### 9. Create a K8s secret in istio-system for the public certificate of WSO2 API Manager as follows.
 
@@ -98,13 +98,7 @@ kubectl create secret generic server-cert --from-file=./server.pem -n istio-syst
 kubectl create -f $MIXER_REPO/adapter/wso2/adapter-artifacts/
 ```
 
-##### 11. Deploy the wso2-adapter as a cluster service
-
-```
-kubectl create -f $MIXER_REPO/adapter/wso2/adapter-artifacts/
-```
-
-##### 12. Deploy the api and the rule for the service
+##### 11. Deploy the api and the rule for the service
 
 ```
 kubectl create -f $ROOT_FOLDER/../samples/api.yaml
