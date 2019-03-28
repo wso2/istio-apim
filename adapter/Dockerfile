@@ -15,7 +15,7 @@
 # limitations under the License
 #
 # ------------------------------------------------------------------------
-FROM golang:1.12 as builder
+FROM golang:1.11 as builder
 WORKDIR .
 COPY ./ .
 RUN CGO_ENABLED=0 GOOS=linux \

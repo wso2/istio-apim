@@ -1,6 +1,6 @@
 ## Developer Guide
 
-This guide is to create the adapter for key validation.
+This guide is to create the adapter for token validation.
 
 ##### 1. Clone WSO2 Istio-apim repo and setup environment variables
 
@@ -57,12 +57,12 @@ go build ./...
 ##### 6. Copy adapter artifacts
 
 ```
-mkdir -p $MIXER_REPO/adapter/wso2/adapter-artifacts
-cp $MIXER_REPO/adapter/wso2/config/wso2.yaml $MIXER_REPO/adapter/wso2/adapter-artifacts
-cp $MIXER_REPO/testdata/config/attributes.yaml $MIXER_REPO/adapter/wso2/adapter-artifacts
-cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/adapter-artifacts
-cp $ROOT_FOLDER/../samples/adapter-artifacts/wso2-operator-config.yaml $MIXER_REPO/adapter/wso2/adapter-artifacts
-cp $ROOT_FOLDER/../samples/adapter-artifacts/wso2-adapter.yaml $MIXER_REPO/adapter/wso2/adapter-artifacts
+mkdir -p $MIXER_REPO/adapter/wso2/install
+cp $MIXER_REPO/adapter/wso2/config/wso2.yaml $MIXER_REPO/adapter/wso2/install
+cp $MIXER_REPO/testdata/config/attributes.yaml $MIXER_REPO/adapter/wso2/install
+cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/install
+cp $ROOT_FOLDER/../install/wso2-operator-config.yaml $MIXER_REPO/adapter/wso2/install
+cp $ROOT_FOLDER/../install/wso2-adapter.yaml $MIXER_REPO/adapter/wso2/install
 ```
 
 Note: attributes.yaml and template.yaml is taken from the Istio repository. wso2-operator-config.yaml and wso2-adapter is taken from istio-apim repo.
@@ -89,18 +89,18 @@ Note: Push this docker image to a docker registry which can be accessed from the
 ##### 9. Create a K8s secret in istio-system for the public certificate of WSO2 API Manager as follows.
 
 ```
-kubectl create secret generic server-cert --from-file=./server.pem -n istio-system
+kubectl create secret generic server-cert --from-file=$ROOT_FOLDER/../install/server.pem -n istio-system
 ```
 
 ##### 10. Deploy the wso2-adapter as a cluster service
 
 ```
-kubectl create -f $MIXER_REPO/adapter/wso2/adapter-artifacts/
+kubectl create -f $MIXER_REPO/adapter/wso2/install/
 ```
 
 ##### 11. Deploy the api and the rule for the service
 
 ```
-kubectl create -f $ROOT_FOLDER/../samples/api.yaml
-kubectl create -f $ROOT_FOLDER/../samples/rule.yaml
+kubectl create -f $ROOT_FOLDER/../samples/httpbin/api.yaml
+kubectl create -f $ROOT_FOLDER/../samples/httpbin/rule.yaml
 ```
