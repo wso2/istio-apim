@@ -2,6 +2,11 @@
 
 This guide is to create the adapter for token validation.
 
+##### Prerequisites
+
+- Docker
+- Go v1.11
+
 ##### 1. Clone WSO2 Istio-apim repo and setup environment variables
 
 ```
