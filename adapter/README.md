@@ -100,7 +100,7 @@ kubectl create secret generic server-cert --from-file=$ROOT_FOLDER/../install/se
 ##### 10. Deploy the wso2-adapter as a cluster service
 
 ```
-kubectl create -f $MIXER_REPO/adapter/wso2/install/
+kubectl apply -f $MIXER_REPO/adapter/wso2/install/
 ```
 
 ##### 11. Deploy the api and the rule for the service

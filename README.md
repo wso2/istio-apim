@@ -75,7 +75,7 @@ Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in instal
 ##### Deploy the wso2-adapter as a cluster service
 
 ```
-kubectl create -f install/
+kubectl apply -f install/
 ```
 
 ### Deploy the httpbin sample
@@ -125,7 +125,7 @@ Note: You can map the API with the service mesh service by changing the followin
 ##### Deploy the rule to apply the mixer adapter for incoming requests
 
 ```
-kubectl create -f samples/rule.yaml
+kubectl create -f samples/httpbin/rule.yaml
 ```
 
 Note: This rule applies for any incoming request in the default namespace. 
