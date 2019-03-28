@@ -40,82 +40,111 @@ Let us now see how service calls work with this solution and at which point API 
 7. The microservice executes the service logic and sends the response.
 8. The response is sent out to the client.
 
----
 
+---
 ## Istio mixer adapter for WSO2 API Manager
 
 Using WSO2 adapter, users can validate JWT tokens along with the API subscriptions.
 
-### Deploy wso2 adapter as a cluster service
+### Installation of the mixer adapter
 
-#### Prerequisites
+##### Prerequisites
 
-- Istio 1.1 or above
-- WSO2 API Manager 2.5.0 or above
+- [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/) 
+- [WSO2 API Manager 2.6.0 or above](https://wso2.com/api-management/)
 
 Notes: 
 
 - The docker image of the WSO2 mixer adapter is available in the docker hub.
-- In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explictly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
+- In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 
-##### 1. Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
-```
-kubectl create secret generic server-cert --from-file=./server.pem -n istio-system
-
-Note: Save the WSO2 server certificate in PEM format in a file called server.pem
-```
-##### 2. Deploy the wso2-adapter as a cluster service
-```
-kubectl create -f samples/adapter-artifacts/
-```
-##### 3. Create and publish an API in WSO2 API Manager Publisher
-
-If you are exposing a service called httpbin, you can create and publish an API with the name httpbinAPI 
-in WSO2 API Manager.
-
-##### 4. Update the API name, version and service for subscription validation
+##### Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
 
 ```
-Open the samples/api.yaml and update the following.
-
-- api.service
-- api.version
-- service 
-
-Then deploy the api as follows.
-
-kubectl create -f samples/api.yaml
-
+kubectl create secret generic server-cert --from-file=./install/server.pem -n istio-system
 ```
 
-##### 5. Deploy the rule to apply the mixer adapter for incoming requests
+Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem
+
+##### Deploy the wso2-adapter as a cluster service
 
 ```
-This rule applies for any incoming request in the default namespace. 
+kubectl create -f install/
+```
 
+### Deploy the httpbin sample
+
+
+- Deploy httpbin sample 
+
+```
+kubectl create -f samples/httpbin/httpbin.yaml
+```
+
+- Expose httpbin via Istio ingress gateway to access from outside
+
+```
+kubectl create -f samples/httpbin/httpbin-gw.yaml
+```
+
+- Access httpbin via Istio ingress gateway
+
+```
+curl http://${INGRESS_GATEWAY_IP}/31380/headers
+```
+
+### Secure the service and validate subscriptions
+
+
+##### Create and publish an API in WSO2 API Manager Publisher
+
+Log into WSO2 API Manager publisher and create an API with the following details.
+
+- API Name : httpbinAPI
+- API Context : /httpbin
+- API Version: 1.0.0 
+
+##### Deploy the API in Istio for subscription validation
+
+```
+kubectl create -f samples/httpbin/api.yaml
+```
+
+Note: You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
+
+- api.service : name of the API
+- api.version : version of the API
+- service : mesh service 
+
+##### Deploy the rule to apply the mixer adapter for incoming requests
+
+```
 kubectl create -f samples/rule.yaml
 ```
 
-##### 6. Create an application in WSO2 API Manager Store, subscribe to the API and generate an access token
+Note: This rule applies for any incoming request in the default namespace. 
 
-```
+##### Create an application in WSO2 API Manager Store, subscribe to the API and generate an access token
+
 - Create an application and select JWT for the Token Type.
-- Subscribe to the API by selecting the application recreated
+
+- Subscribe to the API httpbinAPI by selecting the application created
+
 - Generate an access token
-```
 
-##### 7. Access the Service 
 
-When accessing the service, provide a header as follows.
+##### Access the Service 
 
-```
-curl http://${INGRESS_GATEWAY_URL}/ -H "Authorization: Bearer ACCESS_TOKEN"
-```
-
-##### 8. Cleanup
-
+When accessing the service, provide the authorization header as follows.
 
 ```
-kubectl delete -f samples/ -R
+curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer ACCESS_TOKEN"
+```
+
+### Cleanup
+
+```
+kubectl delete -f samples/httpbin
+kubectl delete -f install/
 kubectl delete secrets server-cert -n istio-system
 ```
