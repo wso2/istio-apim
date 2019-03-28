@@ -58,6 +58,12 @@ Notes:
 - The docker image of the WSO2 mixer adapter is available in the docker hub.
 - In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 
+##### Enable Istio side car injection for the default namespace 
+
+```
+kubectl label namespace default istio-injection=enabled
+```
+
 ##### Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
 
 ```
