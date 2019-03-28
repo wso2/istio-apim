@@ -10,7 +10,7 @@ However when users need to expose these microservices to outside in a secured co
 
 # Approach
 
-When it comes to enabling API Management for Istio, the first iteration of this solution will be designed in such a way that the control plane of the service mesh communicates with the API Manager for token validation, authentication..etc. The API Manager will be responsible for discovery, policy declaration and enforcement, security token service (STS), rate limiting and business insights. The Istio Mixer will be the main point of integration when it comes to run-time security, policy checking, and analytics.
+While Istio providing Data Plane and Control Plane capabilities, WSO2 API Manager provides Manage Plane capabilities to manage microservices.
 
 ![alt text](https://raw.githubusercontent.com/wso2/istio-apim/master/component_diagram.png)
 
@@ -18,12 +18,9 @@ When it comes to enabling API Management for Istio, the first iteration of this 
 
 Mixer is a core Istio component which runs in the control plane of the service mesh. Mixer's plugin model enables new rules and policies to be added to groups of services in the mesh without modifying the individual services or the nodes where they run. API management policies such as authentication (by API key validation), rate-limiting, etc can be deployed and managed at API Manager without doing any changes to the actual microservice or sidecar proxy.
 
-#### Create APIs for Services Created
+#### API Management for Istio
 
-Whenever a user deploys a service, Istio injects a sidecar to the particular service as a proxy. For each request sent to the service, the sidecar proxy will capture a set of data and publish it to the Mixer. If the user needs to expose this service to outside in a managed way, an API should be created in API Manager. This can be done via different methods:
-
-- Automated process - When a user deploys a service which is required to be exposed, an API will be created in API Manager automatically. This can be done via an extension to Kubernetes, using a custom controller which listens for services to be exposed.
-- Manual process - Once a service is deployed, the user can go to the API Manager developer portal and create API by giving service data and swagger file.
+When need to expose this service to outside in a managed way, API developer can use WSO2 API Publisher portal to create the API by attaching necessary policies like security, rate limiting etc. The Publisher is capable of pushing all these policies into Envoy proxy via Pilot and Mixer for them to take action of policy enforcement. After publishing this API, it will appear in the WSO2 API Developer portal. Now app developer can discover these APIs and use in their application along with all the capabilities provided by developer portal like getting a subscription plan, adding application security etc. The business user can use API Analytics to get more business insights by looking at API Analytics.
 
 ####  Route of a Successful Request
 
