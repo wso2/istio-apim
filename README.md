@@ -12,7 +12,7 @@ However when users need to expose these microservices to outside in a secured co
 
 While Istio providing Data Plane and Control Plane capabilities, WSO2 API Manager provides Manage Plane capabilities to manage microservices.
 
-![alt text](https://raw.githubusercontent.com/wso2/istio-apim/master/component_diagram.png)
+![alt text](https://raw.githubusercontent.com/pubudu538/istio-apim/master/component_diagram.png)
 
 #### Role of the Istio Mixer plugin
 
@@ -26,7 +26,7 @@ When need to expose this service to outside in a managed way, API developer can 
 
 Let us now see how service calls work with this solution and at which point API related quality of services gets applied. As you can see in the diagram below, when a request comes from outside it first goes to the Istio proxy (Envoy) and then it will communicate with the mixer for performing policy checks. Based on the outcome of the policy checks, the request may be routed to the service or an error should be sent back to the client. Please see the diagram and steps listed below.
 
-![alt text](https://raw.githubusercontent.com/wso2/istio-apim/master/request_flow.png)
+![alt text](https://raw.githubusercontent.com/pubudu538/istio-apim/master/request_flow.png)
 
 1. The client sends the request to the service (Istio capture the request and redirect to the Istio-proxy). This enters the Kubernetes cluster via an ingress point.
 2. Proxy captures a wealth of signal and sends to the Mixer as attributes.
@@ -77,7 +77,7 @@ Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in instal
 kubectl apply -f install/
 ```
 
-### Deploy a microservice in Istio service mesh
+### Deploy a microservice in Istio
 
 - Deploy httpbin sample service
 
