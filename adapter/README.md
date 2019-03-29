@@ -86,7 +86,7 @@ cp  $ROOT_FOLDER/wso2/cmd/main.go $MIXER_REPO/adapter/wso2/cmd/
 ```
 cd $ROOT_FOLDER
 
-docker build -t pubudu/wso2adapter:0.5 .
+docker build -t wso2/apim-istio-mixer-adapter:0.5 .
 ```
 
 Note: Push this docker image to a docker registry which can be accessed from the Kubernetes cluster.

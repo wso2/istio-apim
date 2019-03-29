@@ -49,11 +49,13 @@ Using WSO2 adapter, users can validate JWT tokens along with the API subscriptio
 
 - [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/) 
 - [WSO2 API Manager 2.6.0 or above](https://wso2.com/api-management/)
+- [Istio-apim release: wso2am-istio-0.5.zip](https://github.com/wso2/istio-apim/releases/tag/0.5)
 
 Notes: 
 
 - The docker image of the WSO2 mixer adapter is available in the docker hub.
 - In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
+- wso2am-istio-0.5.zip contains artifacts to deploy in the Istio.
 
 ##### Enable Istio side car injection for the default namespace 
 
@@ -75,10 +77,9 @@ Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in instal
 kubectl apply -f install/
 ```
 
-### Deploy the httpbin sample
+### Deploy a microservice in Istio service mesh
 
-
-- Deploy httpbin sample 
+- Deploy httpbin sample service
 
 ```
 kubectl create -f samples/httpbin/httpbin.yaml
@@ -96,8 +97,9 @@ kubectl create -f samples/httpbin/httpbin-gw.yaml
 curl http://${INGRESS_GATEWAY_IP}/31380/headers
 ```
 
-### Secure the service and validate subscriptions
+### Apply API Management for microservices
 
+We are going to secure the service and do the subscription validation.
 
 ##### Create and publish an API in WSO2 API Manager Publisher
 
@@ -107,7 +109,7 @@ Log into WSO2 API Manager publisher and create an API with the following details
 - API Context : /httpbin
 - API Version: 1.0.0 
 
-##### Deploy the API in Istio for subscription validation
+##### Bind the API to the service for subscription validation
 
 ```
 kubectl create -f samples/httpbin/api.yaml
