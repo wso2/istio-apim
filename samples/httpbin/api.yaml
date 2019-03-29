@@ -1,0 +1,55 @@
+# Copyright (c)  WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+#
+# WSO2 Inc. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file   except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# Define an API
+apiVersion: config.istio.io/v1alpha2
+kind: HTTPAPISpec
+metadata:
+  creationTimestamp: null
+  name: httpbinapi
+  namespace: default
+spec:
+  apiKeys:
+    - query: apikey
+    - header: x-api-key
+  attributes:
+    attributes:
+      api.service:
+        stringValue: HttpbinAPI       # FIX ME : API Name
+      api.version:
+        stringValue: 1.0.0            # FIX ME : API Version
+  patterns:
+    - attributes:
+        attributes:
+          api.operation:
+            stringValue: /ip
+      httpMethod: GET
+      uriTemplate: /ip
+---
+# Bind the API to a service
+apiVersion: config.istio.io/v1alpha2
+kind: HTTPAPISpecBinding
+metadata:
+  creationTimestamp: null
+  name: httpbinapi-binding
+  namespace: default
+spec:
+  api_specs:
+    - name: httpbinapi
+      namespace: default
+  services:
+    - name: httpbin                    # FIX ME : service which you want to apply the wso2 mixer adapter
+      namespace: default

@@ -10,7 +10,7 @@ However when users need to expose these microservices to outside in a secured co
 
 # Approach
 
-When it comes to enabling API Management for Istio, the first iteration of this solution will be designed in such a way that the control plane of the service mesh communicates with the API Manager for token validation, authentication..etc. The API Manager will be responsible for discovery, policy declaration and enforcement, security token service (STS), rate limiting and business insights. The Istio Mixer will be the main point of integration when it comes to run-time security, policy checking, and analytics.
+While Istio providing Data Plane and Control Plane capabilities, WSO2 API Manager provides Manage Plane capabilities to manage microservices.
 
 ![alt text](https://raw.githubusercontent.com/wso2/istio-apim/master/component_diagram.png)
 
@@ -18,12 +18,9 @@ When it comes to enabling API Management for Istio, the first iteration of this 
 
 Mixer is a core Istio component which runs in the control plane of the service mesh. Mixer's plugin model enables new rules and policies to be added to groups of services in the mesh without modifying the individual services or the nodes where they run. API management policies such as authentication (by API key validation), rate-limiting, etc can be deployed and managed at API Manager without doing any changes to the actual microservice or sidecar proxy.
 
-#### Create APIs for Services Created
+#### API Management for Istio
 
-Whenever a user deploys a service, Istio injects a sidecar to the particular service as a proxy. For each request sent to the service, the sidecar proxy will capture a set of data and publish it to the Mixer. If the user needs to expose this service to outside in a managed way, an API should be created in API Manager. This can be done via different methods:
-
-- Automated process - When a user deploys a service which is required to be exposed, an API will be created in API Manager automatically. This can be done via an extension to Kubernetes, using a custom controller which listens for services to be exposed.
-- Manual process - Once a service is deployed, the user can go to the API Manager developer portal and create API by giving service data and swagger file.
+When need to expose this service to outside in a managed way, API developer can use WSO2 API Publisher portal to create the API by attaching necessary policies like security, rate limiting etc. The Publisher is capable of pushing all these policies into Envoy proxy via Pilot and Mixer for them to take action of policy enforcement. After publishing this API, it will appear in the WSO2 API Developer portal. Now app developer can discover these APIs and use in their application along with all the capabilities provided by developer portal like getting a subscription plan, adding application security etc. The business user can use API Analytics to get more business insights by looking at API Analytics.
 
 ####  Route of a Successful Request
 
@@ -39,3 +36,120 @@ Let us now see how service calls work with this solution and at which point API 
 6. Since in this case there are no policy validation failures the request is routed to the microservice.
 7. The microservice executes the service logic and sends the response.
 8. The response is sent out to the client.
+
+
+---
+## Istio mixer adapter for WSO2 API Manager
+
+Using WSO2 adapter, users can validate JWT tokens along with the API subscriptions.
+
+### Installation of the mixer adapter
+
+##### Prerequisites
+
+- [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/) 
+- [WSO2 API Manager 2.6.0 or above](https://wso2.com/api-management/)
+- [Istio-apim release: wso2am-istio-0.5.zip](https://github.com/wso2/istio-apim/releases/tag/0.5)
+
+Notes: 
+
+- The docker image of the WSO2 mixer adapter is available in the docker hub.
+- In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
+- wso2am-istio-0.5.zip contains artifacts to deploy in the Istio.
+
+##### Enable Istio side car injection for the default namespace 
+
+```
+kubectl label namespace default istio-injection=enabled
+```
+
+##### Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
+
+```
+kubectl create secret generic server-cert --from-file=./install/server.pem -n istio-system
+```
+
+Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem
+
+##### Deploy the wso2-adapter as a cluster service
+
+```
+kubectl apply -f install/
+```
+
+### Deploy a microservice in Istio
+
+- Deploy httpbin sample service
+
+```
+kubectl create -f samples/httpbin/httpbin.yaml
+```
+
+- Expose httpbin via Istio ingress gateway to access from outside
+
+```
+kubectl create -f samples/httpbin/httpbin-gw.yaml
+```
+
+- Access httpbin via Istio ingress gateway
+
+```
+curl http://${INGRESS_GATEWAY_IP}/31380/headers
+```
+
+### Apply API Management for microservices
+
+We are going to secure the service and do the subscription validation.
+
+##### Create and publish an API in WSO2 API Manager Publisher
+
+Log into WSO2 API Manager publisher and create an API with the following details.
+
+- API Name : httpbinAPI
+- API Context : /httpbin
+- API Version: 1.0.0 
+
+##### Bind the API to the service for subscription validation
+
+```
+kubectl create -f samples/httpbin/api.yaml
+```
+
+Note: You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
+
+- api.service : name of the API
+- api.version : version of the API
+- service : mesh service 
+
+##### Deploy the rule to apply the mixer adapter for incoming requests
+
+```
+kubectl create -f samples/httpbin/rule.yaml
+```
+
+Note: This rule applies for any incoming request in the default namespace. 
+
+##### Create an application in WSO2 API Manager Store, subscribe to the API and generate an access token
+
+- Create an application and select JWT for the Token Type.
+
+- Subscribe to the API httpbinAPI by selecting the application created
+
+- Generate an access token
+
+
+##### Access the Service 
+
+When accessing the service, provide the authorization header as follows.
+
+```
+curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer ACCESS_TOKEN"
+```
+
+### Cleanup
+
+```
+kubectl delete -f samples/httpbin
+kubectl delete -f install/
+kubectl delete secrets server-cert -n istio-system
+```
