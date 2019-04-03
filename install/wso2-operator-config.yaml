@@ -42,3 +42,8 @@ spec:
        auth_header_value:  request.headers["authorization"]
        api_name: api.service | ""
        api_version: api.version | ""
+       api_context: api.context | ""
+       request_path: request.path | ""
+       request_method: request.method | ""
+       request_resource: api.operation | ""
+       request_scope: resource.scope | ""

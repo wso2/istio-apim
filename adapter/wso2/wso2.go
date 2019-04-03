@@ -23,6 +23,7 @@ package wso2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"google.golang.org/grpc"
 	"io/ioutil"
@@ -49,10 +50,13 @@ type (
 		listener net.Listener
 		server   *grpc.Server
 		caCert  []byte
+		apimServerToken string
+		apimUrl string
 	}
 )
 
 var _ authorization.HandleAuthorizationServiceServer = &Wso2{}
+var UnauthorizedError = errors.New("Invalid access token")
 
 // Handle authorization
 func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleAuthorizationRequest) (*v1beta1.CheckResult, error) {
@@ -93,6 +97,10 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 	authHeaderValue := props["auth_header_value"].(string)
 	apiName := props["api_name"].(string)
 	apiVersion := props["api_version"].(string)
+	apiContext := props["api_context"].(string)
+	requestResource := props["request_resource"].(string)
+	requestMethod := props["request_method"].(string)
+	requestScope := props["request_scope"].(string)
 
 
 	if len(strings.TrimSpace(authHeaderValue)) == 0 {
@@ -115,10 +123,29 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 	accessToken := headerValues[1]
 	validateSubscription := cfg.ValidateSubscription
 
-	result, err := HandleJWT(validateSubscription, apiName, apiVersion, s.caCert, accessToken)
+	tokenContent := strings.Split(accessToken, ".")
+	var result bool
+	var err error
+
+	var requestAttributes = map[string]string{
+		"api-name":  apiName,
+		"api-version": apiVersion,
+		"api-context": apiContext,
+		"request-resource": requestResource,
+		"request-method": requestMethod,
+		"access-token": accessToken,
+		"request-scope": requestScope,
+	}
+
+	if len(tokenContent) == 1 {
+		serverToken := "Basic " + s.apimServerToken
+		result, err = HandleOauth2AccessToken(serverToken, s.caCert, s.apimUrl, requestAttributes )
+	} else {
+		result, err = HandleJWT(validateSubscription, s.caCert, requestAttributes)
+	}
+
 
 	if err != nil {
-		log.Errorf("Error while handling the JWT")
 
 		if err == UnauthorizedError {
 			return &v1beta1.CheckResult{
@@ -187,10 +214,23 @@ func NewWso2(addr string) (Server, error) {
 		return nil, err
 	}
 
+	//reading the server cert file
+	serverToken, err := ioutil.ReadFile("/etc/wso2/server-credentials/server-token")
+	if err != nil {
+		log.Warnf("Error in reading the server token: ", err)
+	}
+
+	//reading the server cert file
+	apimUrl, err := ioutil.ReadFile("/etc/wso2/server-credentials/apim-url")
+	if err != nil {
+		log.Warnf("Error in reading the apim-url: ", err)
+	}
 
 	s := &Wso2{
 		listener: listener,
 		caCert: caCert,
+		apimServerToken: string(serverToken),
+		apimUrl: string(apimUrl),
 	}
 	log.Infof("listening on \"%v\"\n", s.Addr())
 	s.server = grpc.NewServer()

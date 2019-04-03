@@ -31,11 +31,23 @@ spec:
         stringValue: HttpbinAPI       # FIX ME : API Name
       api.version:
         stringValue: 1.0.0            # FIX ME : API Version
+      api.context:
+        stringValue: /httpbin/1.0.0   # FIX ME : API Context (Context + version)
   patterns:
     - attributes:
         attributes:
           api.operation:
+            stringValue: /headers
+          resource.scope:
+            stringValue: scope_headers   # FIX ME : API Resource Scope for JWT Scope validation
+      httpMethod: GET
+      uriTemplate: /headers
+    - attributes:
+        attributes:
+          api.operation:
             stringValue: /ip
+          resource.scope:
+            stringValue: scope_ip        # FIX ME : API Resource Scope for JWT Scope validation
       httpMethod: GET
       uriTemplate: /ip
 ---

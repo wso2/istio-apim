@@ -53,6 +53,7 @@ wso2.go file contains handler business logic.
 ```
 cp $ROOT_FOLDER/wso2/wso2.go $MIXER_REPO/adapter/wso2/wso2.go
 cp $ROOT_FOLDER/wso2/jwtValidationHandler.go $MIXER_REPO/adapter/wso2/jwtValidationHandler.go
+cp $ROOT_FOLDER/wso2/oauth2ValidationHandler.go $MIXER_REPO/adapter/wso2/oauth2jwtValidationHandler.go
 cd $MIXER_REPO/adapter/wso2
 
 go generate ./...
@@ -64,13 +65,13 @@ go build ./...
 ```
 mkdir -p $MIXER_REPO/adapter/wso2/install
 cp $MIXER_REPO/adapter/wso2/config/wso2.yaml $MIXER_REPO/adapter/wso2/install
-cp $MIXER_REPO/testdata/config/attributes.yaml $MIXER_REPO/adapter/wso2/install
+cp $ROOT_FOLDER/../install/attributes.yaml $MIXER_REPO/adapter/wso2/install
 cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/install
 cp $ROOT_FOLDER/../install/wso2-operator-config.yaml $MIXER_REPO/adapter/wso2/install
 cp $ROOT_FOLDER/../install/wso2-adapter.yaml $MIXER_REPO/adapter/wso2/install
 ```
 
-Note: attributes.yaml and template.yaml is taken from the Istio repository. wso2-operator-config.yaml and wso2-adapter is taken from istio-apim repo.
+Note: template.yaml is taken from the Istio repository. attributes, wso2-operator-config.yaml and wso2-adapter is taken from istio-apim repo.
 
 ##### 7. Create Adapter Starter
 
@@ -86,7 +87,7 @@ cp  $ROOT_FOLDER/wso2/cmd/main.go $MIXER_REPO/adapter/wso2/cmd/
 ```
 cd $ROOT_FOLDER
 
-docker build -t wso2/apim-istio-mixer-adapter:0.5 .
+docker build -t wso2/apim-istio-mixer-adapter:0.6 .
 ```
 
 Note: Push this docker image to a docker registry which can be accessed from the Kubernetes cluster.
