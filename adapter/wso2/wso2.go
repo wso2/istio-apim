@@ -98,9 +98,9 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 	apiName := props["api_name"].(string)
 	apiVersion := props["api_version"].(string)
 	apiContext := props["api_context"].(string)
-    requestResource := props["request_resource"].(string)
-    requestMethod := props["request_method"].(string)
-    requestScope := props["request_scope"].(string)
+	requestResource := props["request_resource"].(string)
+	requestMethod := props["request_method"].(string)
+	requestScope := props["request_scope"].(string)
 
 
 	if len(strings.TrimSpace(authHeaderValue)) == 0 {
