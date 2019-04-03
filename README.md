@@ -69,13 +69,21 @@ kubectl label namespace default istio-injection=enabled
 kubectl create secret generic server-cert --from-file=./install/server.pem -n istio-system
 ```
 
-Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem
+Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem. Using this server certificate, you can do the JWT token validation. 
+If you want to do the OAuth2 token validation, then deploy WSO2 API Manager in K8s or any accessible location. Use that certificate to create the secret.
 
 ##### Deploy the wso2-adapter as a cluster service
 
 ```
 kubectl apply -f install/
 ```
+
+Note: If you want to use OAuth2 token validation, then update the apim-url and server-token of the WSO2 API Manager in install/wso2-adapter.yaml file.
+
+Sample values: 
+
+apim-url: https://wso2apim-with-analytics-apim-service.wso2.svc:9443      
+server-token: YWRtaW46YWRtaW4=  (Base 64 encoded username:password)
 
 ### Deploy a microservice in Istio
 
