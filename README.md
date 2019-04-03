@@ -99,17 +99,25 @@ curl http://${INGRESS_GATEWAY_IP}/31380/headers
 
 ### Apply API Management for microservices
 
-We are going to secure the service and do the subscription validation.
+We are going to secure the service and this can be done with OAuth2 tokens or JWT tokens. Also do the subscription validation for the API and scope validation for the resources.
 
 ##### Create and publish an API in WSO2 API Manager Publisher
 
 Log into WSO2 API Manager publisher and create an API with the following details.
 
-- API Name : httpbinAPI
+- API Name : HttpbinAPI
 - API Context : /httpbin
 - API Version: 1.0.0 
 
-##### Bind the API to the service for subscription validation
+Add the following resources with these scopes.
+
+| Resource        | Scope            | 
+|:--------------- |:---------------- |
+| /ip             | scope_ip         | 
+| /headers        | scope_headers    |  
+
+
+##### Bind the API to the service for subscription validation and scope validation.
 
 ```
 kubectl create -f samples/httpbin/api.yaml
@@ -119,6 +127,7 @@ Note: You can map the API with the service mesh service by changing the followin
 
 - api.service : name of the API
 - api.version : version of the API
+- resource.scope : scope of the resource
 - service : mesh service 
 
 ##### Deploy the rule to apply the mixer adapter for incoming requests
@@ -129,21 +138,35 @@ kubectl create -f samples/httpbin/rule.yaml
 
 Note: This rule applies for any incoming request in the default namespace. 
 
-##### Create an application in WSO2 API Manager Store, subscribe to the API and generate an access token
+##### Access the Service
 
-- Create an application and select JWT for the Token Type.
+1.) Using JWT Tokens
+
+- Create an application by selecting JWT for the Token Type.
 
 - Subscribe to the API httpbinAPI by selecting the application created
 
-- Generate an access token
+- When generating the token, select the relevant scopes and generate an access token
 
-
-##### Access the Service 
 
 When accessing the service, provide the authorization header as follows.
 
 ```
-curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer ACCESS_TOKEN"
+curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer JWT_ACCESS_TOKEN"
+```
+
+2.) Using OAuth2 Tokens
+
+- Create an application by selecting OAuth2 for the Token Type.
+
+- Subscribe to the API httpbinAPI by selecting the application created
+
+- When generating the token, select the relevant scopes and generate an access token
+
+When accessing the service, provide the authorization header as follows.
+
+```
+curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer OAuth2_ACCESS_TOKEN"
 ```
 
 ### Cleanup

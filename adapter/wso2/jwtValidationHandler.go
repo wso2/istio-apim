@@ -53,10 +53,13 @@ type JWTData struct {
 	Jti         string `json:"jti"`
 }
 
-var UnauthorizedError = errors.New("Invalid access token")
 
-func HandleJWT(validateSubscription string, apiName string, apiVersion string, publicCert []byte, accessToken string) (bool , error) {
+func HandleJWT(validateSubscription string, publicCert []byte, requestAttributes map[string]string) (bool , error) {
 
+	accessToken := requestAttributes["access-token"]
+	apiName := requestAttributes["api-name"]
+	apiVersion := requestAttributes["api-version"]
+	requestScope := requestAttributes["request-scope"]
 
 	tokenContent := strings.Split(accessToken, ".")
 
@@ -79,6 +82,10 @@ func HandleJWT(validateSubscription string, apiName string, apiVersion string, p
 	}
 
 	if isTokenExpired(jwtData) {
+		return false, UnauthorizedError
+	}
+
+	if !isRequestScopeValid(jwtData, requestScope) {
 		return false, UnauthorizedError
 	}
 
@@ -133,6 +140,28 @@ func isTokenExpired(jwtData *JWTData) bool {
 	}
 
 	return false
+}
+
+// do resource scope validation
+func isRequestScopeValid(jwtData *JWTData, requestScope string) bool {
+
+	if len(requestScope) > 0 {
+
+		tokenScopes := strings.Split(jwtData.Scope, " ")
+
+		for _, tokenScope := range tokenScopes {
+			if requestScope == tokenScope {
+				log.Infof("Matching scopes found!")
+				return true
+			}
+
+		}
+		log.Infof("No matching scopes found!")
+		return false
+	}
+
+	log.Infof("No scopes defined")
+	return true
 }
 
 // do the subscription validation
