@@ -6,7 +6,7 @@ WSO2 API Manager is a full lifecycle API Management solution which has an API Ga
 
 When users move towards microservice architecture from monolithic app architecture, it can result in a considerable number of fine-grained microservices. So, it was a challenge to manage all these microservices. As a solution, Istio was able to provide a platform to connect, manage and secure all these microservices while reducing the complexity of deployments. In addition, Istio includes APIs that let it integrate into any logging platform, or telemetry or policy system.
 
-However when users need to expose these microservices to outside in a secured controlled manner API Management comes in to picture. Most of the time we need to create APIs (for microservices) and share them with other developers who might be part of your organization or external. So API Management within service mesh solution is required to operate successfully. With this capability, the user can expose one or more services from an Istio service mesh as APIs by adding API management capabilities. 
+However, when users need to expose these microservices to outside in a secured controlled manner API Management comes in to picture. Most of the time we need to create APIs (for microservices) and share them with other developers who might be part of your organization or external. So API Management within service mesh solution is required to operate successfully. With this capability, the user can expose one or more services from an Istio service mesh as APIs by adding API management capabilities. 
 
 # Approach
 
@@ -16,7 +16,7 @@ While Istio providing Data Plane and Control Plane capabilities, WSO2 API Manage
 
 #### Role of the Istio Mixer plugin
 
-Mixer is a core Istio component which runs in the control plane of the service mesh. Mixer's plugin model enables new rules and policies to be added to groups of services in the mesh without modifying the individual services or the nodes where they run. API management policies such as authentication (by API key validation), rate-limiting, etc can be deployed and managed at API Manager without doing any changes to the actual microservice or sidecar proxy.
+The mixer is a core Istio component which runs in the control plane of the service mesh. Mixer's plugin model enables new rules and policies to be added to groups of services in the mesh without modifying the individual services or the nodes where they run. API management policies such as authentication (by API key validation), rate-limiting, etc can be deployed and managed at API Manager without doing any changes to the actual microservice or sidecar proxy.
 
 #### API Management for Istio
 
@@ -41,7 +41,11 @@ Let us now see how service calls work with this solution and at which point API 
 ---
 ## Istio mixer adapter for WSO2 API Manager
 
-Using WSO2 adapter, users can validate JWT tokens along with the API subscriptions.
+Using WSO2 adapter, users can do the following.
+
+- Secure service with JWT and OAuth2 tokens
+- Validate API subscriptions
+- Validate scopes
 
 ### Installation of the mixer adapter
 
@@ -49,13 +53,13 @@ Using WSO2 adapter, users can validate JWT tokens along with the API subscriptio
 
 - [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/) 
 - [WSO2 API Manager 2.6.0 or above](https://wso2.com/api-management/)
-- [Istio-apim release: wso2am-istio-0.5.zip](https://github.com/wso2/istio-apim/releases/tag/0.5)
+- [Istio-apim release: wso2am-istio-0.6.zip](https://github.com/wso2/istio-apim/releases/tag/0.6)
 
 Notes: 
 
-- The docker image of the WSO2 mixer adapter is available in the docker hub.
-- In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
-- wso2am-istio-0.5.zip contains artifacts to deploy in the Istio.
+- The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
+- In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
+- wso2am-istio-0.6.zip contains artifacts to deploy in the Istio.
 
 ##### Enable Istio side car injection for the default namespace 
 
@@ -69,7 +73,7 @@ kubectl label namespace default istio-injection=enabled
 kubectl create secret generic server-cert --from-file=./install/server.pem -n istio-system
 ```
 
-Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem. Using this server certificate, you can do the JWT token validation. 
+*Note:* The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem. Using this server certificate, you can do the JWT token validation. 
 If you want to do the OAuth2 token validation, then deploy WSO2 API Manager in K8s or any accessible location. Use that certificate to create the secret.
 
 ##### Deploy the wso2-adapter as a cluster service
@@ -78,7 +82,7 @@ If you want to do the OAuth2 token validation, then deploy WSO2 API Manager in K
 kubectl apply -f install/
 ```
 
-Note: If you want to use OAuth2 token validation, then update the apim-url and server-token of the WSO2 API Manager in install/wso2-adapter.yaml file.
+*Note:* If you want to use OAuth2 token validation, then update the apim-url and server-token of the WSO2 API Manager in install/wso2-adapter.yaml file.
 
 Sample values: 
 
@@ -107,7 +111,7 @@ curl http://${INGRESS_GATEWAY_IP}/31380/headers
 
 ### Apply API Management for microservices
 
-We are going to secure the service and this can be done with OAuth2 tokens or JWT tokens. Also do the subscription validation for the API and scope validation for the resources.
+We are going to secure the service and this can be done with OAuth2 tokens or JWT tokens. Also, do the subscription validation for the API and scope validation for the resources.
 
 ##### Create and publish an API in WSO2 API Manager Publisher
 
@@ -131,12 +135,22 @@ Add the following resources with these scopes.
 kubectl create -f samples/httpbin/api.yaml
 ```
 
-Note: You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
+*Note:* You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
 
-- api.service : name of the API
-- api.version : version of the API
-- resource.scope : scope of the resource
+- api.service : name of the API              
+- api.version : version of the API           
+- api.context : context of the API          
+- resource.scope : scope of the resource     
 - service : mesh service 
+
+The above values are used in the following verifications.
+
+| Attribute Value | Use Case         | 
+|:--------------- |:---------------- |
+| api.service     | JWT              | 
+| api.version     | JWT and OAuth2   | 
+| api.context     | OAuth2           | 
+| resource.scope  | JWT              | 
 
 ##### Deploy the rule to apply the mixer adapter for incoming requests
 
@@ -144,7 +158,7 @@ Note: You can map the API with the service mesh service by changing the followin
 kubectl create -f samples/httpbin/rule.yaml
 ```
 
-Note: This rule applies for any incoming request in the default namespace. 
+*Note:* This rule applies for any incoming request in the default namespace. 
 
 ##### Access the Service
 
