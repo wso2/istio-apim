@@ -6,7 +6,7 @@ WSO2 API Manager is a full lifecycle API Management solution which has an API Ga
 
 When users move towards microservice architecture from monolithic app architecture, it can result in a considerable number of fine-grained microservices. So, it was a challenge to manage all these microservices. As a solution, Istio was able to provide a platform to connect, manage and secure all these microservices while reducing the complexity of deployments. In addition, Istio includes APIs that let it integrate into any logging platform, or telemetry or policy system.
 
-However when users need to expose these microservices to outside in a secured controlled manner API Management comes in to picture. Most of the time we need to create APIs (for microservices) and share them with other developers who might be part of your organization or external. So API Management within service mesh solution is required to operate successfully. With this capability, the user can expose one or more services from an Istio service mesh as APIs by adding API management capabilities. 
+However, when users need to expose these microservices to outside in a secured controlled manner API Management comes in to picture. Most of the time we need to create APIs (for microservices) and share them with other developers who might be part of your organization or external. So API Management within service mesh solution is required to operate successfully. With this capability, the user can expose one or more services from an Istio service mesh as APIs by adding API management capabilities. 
 
 # Approach
 
@@ -16,7 +16,7 @@ While Istio providing Data Plane and Control Plane capabilities, WSO2 API Manage
 
 #### Role of the Istio Mixer plugin
 
-Mixer is a core Istio component which runs in the control plane of the service mesh. Mixer's plugin model enables new rules and policies to be added to groups of services in the mesh without modifying the individual services or the nodes where they run. API management policies such as authentication (by API key validation), rate-limiting, etc can be deployed and managed at API Manager without doing any changes to the actual microservice or sidecar proxy.
+The mixer is a core Istio component which runs in the control plane of the service mesh. Mixer's plugin model enables new rules and policies to be added to groups of services in the mesh without modifying the individual services or the nodes where they run. API management policies such as authentication (by API key validation), rate-limiting, etc can be deployed and managed at API Manager without doing any changes to the actual microservice or sidecar proxy.
 
 #### API Management for Istio
 
@@ -58,7 +58,7 @@ Using WSO2 adapter, users can do the following.
 Notes: 
 
 - The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
-- In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
+- In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 - wso2am-istio-0.6.zip contains artifacts to deploy in the Istio.
 
 ##### Enable Istio side car injection for the default namespace 
@@ -111,7 +111,7 @@ curl http://${INGRESS_GATEWAY_IP}/31380/headers
 
 ### Apply API Management for microservices
 
-We are going to secure the service and this can be done with OAuth2 tokens or JWT tokens. Also do the subscription validation for the API and scope validation for the resources.
+We are going to secure the service and this can be done with OAuth2 tokens or JWT tokens. Also, do the subscription validation for the API and scope validation for the resources.
 
 ##### Create and publish an API in WSO2 API Manager Publisher
 
