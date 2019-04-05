@@ -137,10 +137,10 @@ kubectl create -f samples/httpbin/api.yaml
 
 *Note:* You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
 
-- api.service : name of the API              # Used in JWT verification
-- api.version : version of the API           # Used in JWT verification and OAuth2 verification
-- api.context : context of the API           # Used in OAuth2 verification
-- resource.scope : scope of the resource     # Used in JWT verification 
+- api.service : name of the API              
+- api.version : version of the API           
+- api.context : context of the API          
+- resource.scope : scope of the resource     
 - service : mesh service 
 
 The above values are used in the following verifications.
