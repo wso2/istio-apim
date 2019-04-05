@@ -41,7 +41,11 @@ Let us now see how service calls work with this solution and at which point API 
 ---
 ## Istio mixer adapter for WSO2 API Manager
 
-Using WSO2 adapter, users can validate JWT tokens along with the API subscriptions.
+Using WSO2 adapter, users can do the following.
+
+- Secure service with JWT and OAuth2 tokens
+- Validate API subscriptions
+- Validate scopes
 
 ### Installation of the mixer adapter
 
@@ -49,13 +53,13 @@ Using WSO2 adapter, users can validate JWT tokens along with the API subscriptio
 
 - [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/) 
 - [WSO2 API Manager 2.6.0 or above](https://wso2.com/api-management/)
-- [Istio-apim release: wso2am-istio-0.5.zip](https://github.com/wso2/istio-apim/releases/tag/0.5)
+- [Istio-apim release: wso2am-istio-0.6.zip](https://github.com/wso2/istio-apim/releases/tag/0.6)
 
 Notes: 
 
-- The docker image of the WSO2 mixer adapter is available in the docker hub.
+- The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
 - In the default profile of Istio installation, policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
-- wso2am-istio-0.5.zip contains artifacts to deploy in the Istio.
+- wso2am-istio-0.6.zip contains artifacts to deploy in the Istio.
 
 ##### Enable Istio side car injection for the default namespace 
 
@@ -69,7 +73,7 @@ kubectl label namespace default istio-injection=enabled
 kubectl create secret generic server-cert --from-file=./install/server.pem -n istio-system
 ```
 
-Note: The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem. Using this server certificate, you can do the JWT token validation. 
+*Note:* The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem. Using this server certificate, you can do the JWT token validation. 
 If you want to do the OAuth2 token validation, then deploy WSO2 API Manager in K8s or any accessible location. Use that certificate to create the secret.
 
 ##### Deploy the wso2-adapter as a cluster service
@@ -78,7 +82,7 @@ If you want to do the OAuth2 token validation, then deploy WSO2 API Manager in K
 kubectl apply -f install/
 ```
 
-Note: If you want to use OAuth2 token validation, then update the apim-url and server-token of the WSO2 API Manager in install/wso2-adapter.yaml file.
+*Note:* If you want to use OAuth2 token validation, then update the apim-url and server-token of the WSO2 API Manager in install/wso2-adapter.yaml file.
 
 Sample values: 
 
@@ -131,12 +135,22 @@ Add the following resources with these scopes.
 kubectl create -f samples/httpbin/api.yaml
 ```
 
-Note: You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
+*Note:* You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
 
-- api.service : name of the API
-- api.version : version of the API
-- resource.scope : scope of the resource
+- api.service : name of the API              # Used in JWT verification
+- api.version : version of the API           # Used in JWT verification and OAuth2 verification
+- api.context : context of the API           # Used in OAuth2 verification
+- resource.scope : scope of the resource     # Used in JWT verification 
 - service : mesh service 
+
+The above values are used in the following verifications.
+
+| Attribute Value | Use Case         | 
+|:--------------- |:---------------- |
+| api.service     | JWT              | 
+| api.version     | JWT and OAuth2   | 
+| api.context     | OAuth2           | 
+| resource.scope  | JWT              | 
 
 ##### Deploy the rule to apply the mixer adapter for incoming requests
 
@@ -144,7 +158,7 @@ Note: You can map the API with the service mesh service by changing the followin
 kubectl create -f samples/httpbin/rule.yaml
 ```
 
-Note: This rule applies for any incoming request in the default namespace. 
+*Note:* This rule applies for any incoming request in the default namespace. 
 
 ##### Access the Service
 
