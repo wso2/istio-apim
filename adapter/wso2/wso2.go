@@ -17,7 +17,7 @@
 // nolint:lll
 // Generates the wso2 adapter's resource yaml. It contains the adapter's configuration, name, supported template
 // names (Authorization in this case), and whether it is session or no-session based.
-//go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -a mixer/adapter/wso2/config/config.proto -x "-s=false -n wso2 -t authorization"
+//go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -a mixer/adapter/wso2/config/config.proto -x "-s=false -n wso2 -t authorization -t metric"
 
 package wso2
 
@@ -25,16 +25,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/patrickmn/go-cache"
 	"google.golang.org/grpc"
 	"io/ioutil"
-	policy "istio.io/api/policy/v1beta1"
 	"istio.io/api/mixer/adapter/model/v1beta1"
+	policy "istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/adapter/wso2/config"
 	"istio.io/istio/mixer/pkg/status"
 	"istio.io/istio/mixer/template/authorization"
+	"istio.io/istio/mixer/template/metric"
 	"istio.io/istio/pkg/log"
+	logg "log"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type (
@@ -47,19 +52,288 @@ type (
 
 	// WSO2 supports authorization template.
 	Wso2 struct {
-		listener net.Listener
-		server   *grpc.Server
-		caCert  []byte
+		listener        net.Listener
+		server          *grpc.Server
+		caCert          []byte
 		apimServerToken string
-		apimUrl string
+		apimUrl         string
 	}
 )
 
+type TokenData struct {
+	meta_clientType        string
+	applicationConsumerKey string
+	applicationName        string
+	applicationId          string
+	applicationOwner       string
+	apiCreator             string
+	apiCreatorTenantDomain string
+	apiTier                string
+	username               string
+	userTenantDomain       string
+	throttledOut           bool
+	serviceTime            int64
+	authorized             bool
+}
+
+type Request struct {
+	stringValues  map[string]string
+	longValues    map[string]int64
+	intValues     map[string]int32
+	booleanValues map[string]bool
+}
+
 var _ authorization.HandleAuthorizationServiceServer = &Wso2{}
+var _ metric.HandleMetricServiceServer = &Wso2{}
+
+const (
+	requestStream string = "request-stream"
+	faultStream string = "fault-stream"
+	throttleStream string = "throttle-stream"
+	grpcPoolSize string = "grpc-pool-size"
+	grpcPoolInitialSize string = "grpc-pool-initial-size"
+)
 var UnauthorizedError = errors.New("Invalid access token")
+var GlobalCache = cache.New(5*time.Minute, 10*time.Minute)
+
+// HandleMetric records metric entries
+func (s *Wso2) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
+
+	cfg := &config.Params{}
+
+	if r.AdapterConfig != nil {
+		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
+			log.Errorf("error unmarshalling adapter config: %v", err)
+			return nil, err
+		}
+	}
+
+	successRequests, faultRequests := getRequests(r.Instances)
+	_, _ = HandleAnalytics(getAnalyticsConfigs(cfg), successRequests, faultRequests)
+
+	log.Infof("done in metrics -------------- !!")
+	return &v1beta1.ReportResult{}, nil
+}
+
+// get analytics configurations
+func getAnalyticsConfigs(cfg *config.Params) map[string]string {
+
+	var configs = make(map[string]string)
+
+	configs[grpcPoolSize] = cfg.GrpcPoolSize
+	configs[grpcPoolInitialSize] = cfg.GrpcPoolInitialSize
+	configs[requestStream] = cfg.RequestStreamAppUrl
+	configs[faultStream] = cfg.FaultStreamAppUrl
+	configs[throttleStream] = cfg.ThrottleStreamAppUrl
+
+	return configs
+}
+
+// decode the value map
+func decodeValueMap(in map[string]*policy.Value) map[string]interface{} {
+	out := make(map[string]interface{}, len(in))
+	for k, v := range in {
+		out[k] = decodeValue(v.GetValue())
+	}
+	return out
+}
+
+// decode values
+func decodeValue(in interface{}) interface{} {
+	switch t := in.(type) {
+	case *policy.Value_StringValue:
+		return t.StringValue
+	case *policy.Value_Int64Value:
+		return t.Int64Value
+	case *policy.Value_DoubleValue:
+		return t.DoubleValue
+	case *policy.Value_IpAddressValue:
+		return t.IpAddressValue
+	case *policy.Value_TimestampValue:
+		return t.TimestampValue
+	default:
+		return fmt.Sprintf("%v", in)
+	}
+}
+
+// get requests for analytics
+func getRequests(in []*metric.InstanceMsg) (map[int]Request, map[int]Request) {
+
+	successRequests := make(map[int]Request)
+	faultRequests := make(map[int]Request)
+
+	for i, inst := range in {
+
+		stringValues := make(map[string]string)
+		longValues := make(map[string]int64)
+		intValues := make(map[string]int32)
+		booleanValues := make(map[string]bool)
+		dimensions := decodeValueMap(inst.Dimensions)
+
+		authHeaderValue := dimensions["auth_header_value"].(string)
+
+		if len(strings.TrimSpace(authHeaderValue)) == 0 {
+			continue
+		}
+		headerValues := strings.Split(authHeaderValue, " ")
+		if len(headerValues) < 2 {
+			continue
+		}
+		accessToken := strings.Split(authHeaderValue, " ")
+
+		var tokenDataValues *TokenData
+		var serviceTime = int64(0)
+
+		if tokenData, found := GlobalCache.Get(accessToken[1]); found {
+			tokenDataValues = tokenData.(*TokenData)
+
+			if !tokenDataValues.authorized {
+				continue
+			}
+
+			stringValues["meta_clientType"] = tokenDataValues.meta_clientType
+			stringValues["applicationConsumerKey"] = tokenDataValues.applicationConsumerKey
+			stringValues["applicationName"] = tokenDataValues.applicationName
+			stringValues["applicationId"] = tokenDataValues.applicationId
+			stringValues["applicationOwner"] = tokenDataValues.applicationOwner
+			stringValues["apiCreator"] = tokenDataValues.apiCreator
+			stringValues["apiCreatorTenantDomain"] = tokenDataValues.apiCreatorTenantDomain
+			stringValues["apiTier"] = tokenDataValues.apiTier
+			stringValues["username"] = tokenDataValues.username
+			stringValues["userTenantDomain"] = tokenDataValues.userTenantDomain
+
+			booleanValues["throttledOut"] = tokenDataValues.throttledOut
+			serviceTime = tokenDataValues.serviceTime
+			longValues["serviceTime"] = serviceTime
+			longValues["securityLatency"] = serviceTime
+		}
+
+		apiContext := dimensions["api_context"].(string)
+		apiName := dimensions["api_name"].(string)
+		apiVersion := dimensions["api_version"].(string)
+		apiResourcePath := dimensions["resource_path"].(string)
+		apiResourceTemplate := dimensions["resource_path_template"].(string)
+		apiMethod := dimensions["request_method"].(string)
+		apiHostname := dimensions["request_host"].(string)
+		// ipaddress
+		ipAddr := dimensions["user_ip"]
+		ipValue := ipAddr.(*policy.IPAddress).Value
+		userIp := net.IP(ipValue).String()
+
+		userAgent := dimensions["user_agent"].(string)
+
+		stringValues["apiContext"] = apiContext
+		stringValues["apiName"] = apiName
+		stringValues["apiVersion"] = apiVersion
+		stringValues["apiResourcePath"] = apiResourcePath
+		stringValues["apiResourceTemplate"] = apiResourceTemplate
+		stringValues["apiMethod"] = apiMethod
+		stringValues["apiHostname"] = apiHostname
+		stringValues["userIp"] = userIp
+		stringValues["userAgent"] = userAgent
+
+		requestTimestamp := getUnixTime("request_timestamp", dimensions)
+		longValues["requestTimestamp"] = requestTimestamp
+
+		responseTimestamp := getUnixTime("response_timestamp", dimensions)
+		responseTime := responseTimestamp - requestTimestamp
+		longValues["responseTime"] = responseTime
+
+		if responseTime < serviceTime {
+			serviceTime = 0
+		}
+
+		longValues["backendLatency"] = responseTime - serviceTime
+		longValues["backendTime"] = responseTime - serviceTime
+
+		responseCacheHit := false
+		booleanValues["responseCacheHit"] = responseCacheHit
+
+		responseSize := dimensions["response_size"].(int64)
+		longValues["responseSize"] = responseSize
+
+		protocol := dimensions["api_protocol"].(string)
+		stringValues["protocol"] = protocol
+
+		responseCode := dimensions["response_code"].(int64)
+		intValues["responseCode"] = int32(responseCode)
+
+		destination := dimensions["destination"].(string)
+		stringValues["destination"] = destination
+
+		throttlingLatency := 0
+		longValues["throttlingLatency"] = int64(throttlingLatency)
+
+		requestMedLat := 0
+		longValues["requestMedLat"] = int64(requestMedLat)
+
+		responseMedLat := 0
+		longValues["responseMedLat"] = int64(responseMedLat)
+
+		otherLatency := 0
+		longValues["otherLatency"] = int64(otherLatency)
+
+		gatewayType := "ISTIO"
+		label := "ISTIO"
+		stringValues["gatewayType"] = gatewayType
+		stringValues["label"] = label
+
+		var request Request
+		request.stringValues = stringValues
+		request.longValues = longValues
+		request.intValues = intValues
+		request.booleanValues = booleanValues
+
+		requestType := getRequestType(responseCode)
+
+		if requestType == requestStream {
+			successRequests[i] = request
+		} else if requestType == faultStream {
+			stringValues["hostname"] = apiHostname
+			stringValues["errorCode"] = "0"
+			stringValues["errorMessage"] = "Error"
+			faultRequests[i] = request
+		}
+
+	}
+
+	return successRequests, faultRequests
+}
+
+// get request type
+func getRequestType(responseCode int64) string  {
+
+	var requestType string
+
+	if responseCode >= 200 && responseCode < 300 {
+		requestType = requestStream
+	} else if responseCode >= 500 && responseCode < 600 {
+		requestType = faultStream
+	}
+
+	return requestType
+}
+// get the unix time for the given property value
+func getUnixTime(property string, dimensions map[string]interface{}) int64 {
+
+	timeStamp := dimensions[property]
+	timeStampValue := timeStamp.(*policy.TimeStamp).Value
+	timeStampValueStr := fmt.Sprint(timeStampValue)
+	timeValue, err := time.Parse(time.RFC3339, timeStampValueStr)
+
+	if err != nil {
+		log.Errorf("Error while parsing the timestamp %v", timeStampValueStr)
+		return 0
+	}
+
+	return timeValue.UnixNano() / int64(time.Millisecond)
+}
 
 // Handle authorization
 func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleAuthorizationRequest) (*v1beta1.CheckResult, error) {
+
+	logg.Println("Inside Auth 8888888888888888888888888")
+	startTime := time.Now().UnixNano() / int64(time.Millisecond)
 
 	cfg := &config.Params{}
 
@@ -68,28 +342,6 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 			log.Errorf("Error while unmarshalling adapter config: %v", err)
 			return nil, err
 		}
-	}
-
-
-	decodeValue := func(in interface{}) interface{} {
-		switch t := in.(type) {
-		case *policy.Value_StringValue:
-			return t.StringValue
-		case *policy.Value_Int64Value:
-			return t.Int64Value
-		case *policy.Value_DoubleValue:
-			return t.DoubleValue
-		default:
-			return fmt.Sprintf("%v", in)
-		}
-	}
-
-	decodeValueMap := func(in map[string]*policy.Value) map[string]interface{} {
-		out := make(map[string]interface{}, len(in))
-		for k, v := range in {
-			out[k] = decodeValue(v.GetValue())
-		}
-		return out
 	}
 
 	props := decodeValueMap(r.Instance.Subject.Properties)
@@ -101,7 +353,6 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 	requestResource := props["request_resource"].(string)
 	requestMethod := props["request_method"].(string)
 	requestScope := props["request_scope"].(string)
-
 
 	if len(strings.TrimSpace(authHeaderValue)) == 0 {
 
@@ -121,29 +372,41 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 	}
 
 	accessToken := headerValues[1]
-	validateSubscription := cfg.ValidateSubscription
+	validateSubscription, _ := strconv.ParseBool(cfg.ValidateSubscription)
+	disableHostnameVerification, _ := strconv.ParseBool(cfg.DisableHostnameVerification)
 
 	tokenContent := strings.Split(accessToken, ".")
 	var result bool
 	var err error
+	var tokenData TokenData
 
 	var requestAttributes = map[string]string{
-		"api-name":  apiName,
-		"api-version": apiVersion,
-		"api-context": apiContext,
+		"api-name":         apiName,
+		"api-version":      apiVersion,
+		"api-context":      apiContext,
 		"request-resource": requestResource,
-		"request-method": requestMethod,
-		"access-token": accessToken,
-		"request-scope": requestScope,
+		"request-method":   requestMethod,
+		"access-token":     accessToken,
+		"request-scope":    requestScope,
 	}
 
 	if len(tokenContent) == 1 {
 		serverToken := "Basic " + s.apimServerToken
-		result, err = HandleOauth2AccessToken(serverToken, s.caCert, s.apimUrl, requestAttributes )
+		result, tokenData, err = HandleOauth2AccessToken(serverToken, s.caCert, s.apimUrl, requestAttributes,
+			disableHostnameVerification)
 	} else {
-		result, err = HandleJWT(validateSubscription, s.caCert, requestAttributes)
+		result, tokenData, err = HandleJWT(validateSubscription, s.caCert, requestAttributes)
 	}
 
+	endTime := time.Now().UnixNano() / int64(time.Millisecond)
+	serviceTime := endTime - startTime
+	tokenData.serviceTime = serviceTime
+	GlobalCache.Set(accessToken, &tokenData, cache.DefaultExpiration)
+
+	logg.Println("Service timeeeeeeeeeeeeeeeeee0000 ")
+	logg.Println(serviceTime)
+	logg.Println(endTime)
+	logg.Println(startTime)
 
 	if err != nil {
 
@@ -159,7 +422,6 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 		}
 
 	}
-
 
 	if result {
 		log.Infof("success!!")
@@ -208,32 +470,36 @@ func NewWso2(addr string) (Server, error) {
 	}
 
 	//reading the server cert file
-	caCert, err := ioutil.ReadFile("/etc/wso2/server-cert/server.pem")
-	if err != nil {
-		log.Fatalf("Error in reading the Server Cert file: ", err)
-		return nil, err
-	}
+	caCert, _ := readSecret("/etc/wso2/server-cert/server.pem")
 
 	//reading the server cert file
-	serverToken, err := ioutil.ReadFile("/etc/wso2/server-credentials/server-token")
-	if err != nil {
-		log.Warnf("Error in reading the server token: ", err)
-	}
+	serverToken, _ := readSecret("/etc/wso2/server-credentials/server-token")
 
 	//reading the server cert file
-	apimUrl, err := ioutil.ReadFile("/etc/wso2/server-credentials/apim-url")
-	if err != nil {
-		log.Warnf("Error in reading the apim-url: ", err)
-	}
+	apimUrl, _ := readSecret("/etc/wso2/server-credentials/apim-url")
 
 	s := &Wso2{
-		listener: listener,
-		caCert: caCert,
+		listener:        listener,
+		caCert:          caCert,
 		apimServerToken: string(serverToken),
-		apimUrl: string(apimUrl),
+		apimUrl:         string(apimUrl),
 	}
+
 	log.Infof("listening on \"%v\"\n", s.Addr())
 	s.server = grpc.NewServer()
 	authorization.RegisterHandleAuthorizationServiceServer(s.server, s)
+	metric.RegisterHandleMetricServiceServer(s.server, s)
+
 	return s, nil
+}
+
+//reading the secret
+func readSecret(fileName string) ([]byte, error) {
+
+	secretValue, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Warnf("Error in reading the secret %v: error - %v", fileName, err)
+	}
+
+	return secretValue, err
 }

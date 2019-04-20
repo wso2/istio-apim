@@ -6,6 +6,7 @@ This guide is to create the adapter for token validation.
 
 - Docker
 - Go v1.11
+- Protoc
 
 ##### 1. Clone WSO2 Istio-apim repo and setup environment variables
 
@@ -30,6 +31,22 @@ cd $ISTIO/istio
 git checkout 1.1.0
 ```
 
+-----------
+mkdir -p $GOPATH/src/github.com/golang/
+cd $GOPATH/src/github.com/golang/
+git clone https://github.com/golang/protobuf/
+
+mkdir -p $GOPATH/src/github.com/processout/
+cd $GOPATH/src/github.com/processout/
+git clone https://github.com/processout/grpc-go-pool
+
+mkdir -p $GOPATH/src/github.com/processout/
+cd $GOPATH/src/github.com/processout/
+git clone https://github.com/processout/grpc-go-pool
+
+golang.org/x/net/context
+---------
+
 ##### 3. Build mixer server,client binary
 
 ```
@@ -43,7 +60,9 @@ This file contains the runtime parameters.
 
 ```
 mkdir -p $MIXER_REPO/adapter/wso2/config
+mkdir -p $ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated
 cp $ROOT_FOLDER/wso2/config/config.proto $MIXER_REPO/adapter/wso2/config/config.proto
+cp $ROOT_FOLDER/../analytics/core/org.wso2.apim.proto/src/main/proto/ReportService.proto $ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated/
 ```
 
 ##### 5. Copy Adapter implementation source code and build
@@ -54,7 +73,11 @@ wso2.go file contains handler business logic.
 cp $ROOT_FOLDER/wso2/wso2.go $MIXER_REPO/adapter/wso2/wso2.go
 cp $ROOT_FOLDER/wso2/jwtValidationHandler.go $MIXER_REPO/adapter/wso2/jwtValidationHandler.go
 cp $ROOT_FOLDER/wso2/oauth2ValidationHandler.go $MIXER_REPO/adapter/wso2/oauth2jwtValidationHandler.go
+cp $ROOT_FOLDER/wso2/analyticsHandler.go $MIXER_REPO/adapter/wso2/analyticsHandler.go
 cd $MIXER_REPO/adapter/wso2
+
+protoc -I $ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated/ -I${GOPATH}/src --go_out=plugins=grpc:$ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated/ $ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated/ReportService.proto
+
 
 go generate ./...
 go build ./...
@@ -66,7 +89,8 @@ go build ./...
 mkdir -p $MIXER_REPO/adapter/wso2/install
 cp $MIXER_REPO/adapter/wso2/config/wso2.yaml $MIXER_REPO/adapter/wso2/install
 cp $ROOT_FOLDER/../install/attributes.yaml $MIXER_REPO/adapter/wso2/install
-cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/install
+cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/install/auth-template.yaml
+cp $MIXER_REPO/template/metric/template.yaml $MIXER_REPO/adapter/wso2/install/metric-template.yaml
 cp $ROOT_FOLDER/../install/wso2-operator-config.yaml $MIXER_REPO/adapter/wso2/install
 cp $ROOT_FOLDER/../install/wso2-adapter.yaml $MIXER_REPO/adapter/wso2/install
 ```
@@ -79,7 +103,7 @@ This app launches the adapter gRPC server:
 
 ```
 mkdir -p $MIXER_REPO/adapter/wso2/cmd
-cp  $ROOT_FOLDER/wso2/cmd/main.go $MIXER_REPO/adapter/wso2/cmd/
+cp $ROOT_FOLDER/wso2/cmd/main.go $MIXER_REPO/adapter/wso2/cmd/
 ```
 
 ##### 8. Create a Adapter docker image
@@ -87,7 +111,7 @@ cp  $ROOT_FOLDER/wso2/cmd/main.go $MIXER_REPO/adapter/wso2/cmd/
 ```
 cd $ROOT_FOLDER
 
-docker build -t wso2/apim-istio-mixer-adapter:0.6 .
+docker build -t pubudu/apim-istio-mixer-adapter:0.8 .
 ```
 
 Note: Push this docker image to a docker registry which can be accessed from the Kubernetes cluster.
@@ -102,6 +126,7 @@ kubectl create secret generic server-cert --from-file=$ROOT_FOLDER/../install/se
 
 ```
 kubectl apply -f $MIXER_REPO/adapter/wso2/install/
+kubectl delete -f $MIXER_REPO/adapter/wso2/install/
 ```
 
 ##### 11. Deploy the api and the rule for the service

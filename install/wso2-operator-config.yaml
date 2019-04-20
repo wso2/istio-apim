@@ -28,6 +28,12 @@ spec:
    #address: "35.184.34.117:44225"
  params:
    validate_subscription: "true"
+   disable_hostname_verification: "false"
+   request_stream_app_url: "35.193.189.184:7575"
+   fault_stream_app_url: "35.193.189.184:7576"
+   throttle_stream_app_url: "35.193.189.184:7577"
+   grpc_pool_size: "5"
+   grpc_pool_initial_size: "1"
 ---
 apiVersion: "config.istio.io/v1alpha2"
 kind: instance
@@ -47,3 +53,32 @@ spec:
        request_method: request.method | ""
        request_resource: api.operation | ""
        request_scope: resource.scope | ""
+
+---
+# instance for template metric
+apiVersion: "config.istio.io/v1alpha2"
+kind: instance
+metadata:
+  name: wso2-metric
+  namespace: istio-system
+spec:
+  template: metric
+  params:
+    value: request.size | 0
+    dimensions:
+      auth_header_value:  request.headers["authorization"]
+      api_context: api.context | ""
+      api_name: api.service | ""
+      api_version: api.version | ""
+      resource_path: request.url_path | ""
+      resource_path_template: api.operation | ""
+      request_method: request.method | ""
+      user_ip: source.ip | ip("0.0.0.0")
+      user_agent: request.useragent | ""
+      request_timestamp: request.time
+      response_timestamp: response.time
+      response_size: response.size | 0
+      api_protocol: api.protocol | "http"
+      response_code: response.code | 0
+      destination: destination.service.host | ""
+      request_host: request.host | ""

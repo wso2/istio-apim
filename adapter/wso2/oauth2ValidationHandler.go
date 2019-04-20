@@ -109,7 +109,8 @@ const soapServiceUrl = "/services/APIKeyValidationService.APIKeyValidationServic
 const version = "http://www.w3.org/2003/05/soap-envelope"
 const soapDefinition = "http://org.apache.axis2/xsd"
 
-func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl string, requestAttributes map[string]string) (bool, error) {
+func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl string, requestAttributes map[string]string,
+	disableHostnameVerification bool) (bool, TokenData, error) {
 
 	accessToken := requestAttributes["access-token"]
 	apiContext := requestAttributes["api-context"]
@@ -126,7 +127,8 @@ func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl stri
 	url := apimUrl + soapServiceUrl //api-manager endpoint URL
 	name := &RequestData{Version: version, Var2: soapDefinition}
 
-	name.Svs = append(name.Svs, soapBody{apiContext, apiVersion, accessToken, "Any", "?", resource, httpMethod})
+	name.Svs = append(name.Svs, soapBody{apiContext, apiVersion, accessToken,
+		"Any", "?", resource, httpMethod})
 
 	output, err := xml.MarshalIndent(name, "  ", "    ")
 	if err != nil {
@@ -137,7 +139,8 @@ func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl stri
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				RootCAs: caCertPool,
+				RootCAs:            caCertPool,
+				InsecureSkipVerify: disableHostnameVerification,
 			},
 		},
 	}
@@ -178,5 +181,33 @@ func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl stri
 		oauthError = UnauthorizedError
 	}
 
-	return isTokenAuthorized, oauthError
+	var tokenData TokenData
+
+	if isTokenAuthorized {
+		tokenData = getTokenDataForOAuth2(vrb)
+	}
+	return isTokenAuthorized, tokenData, oauthError
+}
+
+func getTokenDataForOAuth2(vrb *ValidateResponseBody) TokenData {
+
+	var tokenData TokenData
+	validationResponse := vrb.Body.ValidateKeyResponse.Return
+	authorized, _ := strconv.ParseBool(validationResponse.Authorized)
+
+	tokenData.authorized = authorized
+	tokenData.meta_clientType = validationResponse.Type
+	tokenData.applicationConsumerKey = validationResponse.ConsumerKey
+	tokenData.applicationName = validationResponse.ApplicationName
+	tokenData.applicationId = validationResponse.ApplicationId
+	tokenData.applicationOwner = validationResponse.Subscriber
+
+	tokenData.apiCreator = validationResponse.ApiPublisher
+	tokenData.apiCreatorTenantDomain = validationResponse.SubscriberTenantDomain
+	tokenData.apiTier = validationResponse.ApplicationTier
+	tokenData.username = validationResponse.EndUserName
+	tokenData.userTenantDomain = validationResponse.SubscriberTenantDomain
+	tokenData.throttledOut = false
+
+	return tokenData
 }

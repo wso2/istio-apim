@@ -18,22 +18,34 @@
 
 syntax = "proto3";
 
+// Package name of analytics
 package org.wso2.apim.grpc.telemetry.receiver.generated;
 
 option java_multiple_files = true;
 
+// Report Request proto for analytics
 message ReportRequest {
 
+    // Map contains string values
     map<string, string> stringValues = 1;
+
+    // Map contains long values
     map<string, int64> longValues = 2;
+
+    // Map contains int values
     map<string, int32> intValues = 3;
+
+    // Map contains boolean values
     map<string, bool> booleanValues = 4;
 }
 
+// Report Response proto for analytics
 message ReportResponse {
 }
 
-// service
+// Report service
 service ReportService {
+
+    // Report service for analytics
     rpc report(ReportRequest) returns (ReportResponse);
 }
