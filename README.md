@@ -43,7 +43,7 @@ Let us now see how service calls work with this solution and at which point API 
 
 Using WSO2 adapter, users can do the following.
 
-- Secure service with JWT and OAuth2 tokens
+- Secure services with JWT and OAuth2 tokens
 - Validate API subscriptions
 - Validate scopes
 - Use WSO2 API Manager Analytics for business insights
@@ -68,7 +68,7 @@ Notes:
 - [Enable Analytics](https://docs.wso2.com/display/AM260/Configuring+APIM+Analytics) 
 - Start WSO2 API Manager server
 
-*Note:* Make sure WSO2 API Manager server can be accessible from K8s
+*Note:* Make sure WSO2 API Manager server can be accessible from K8s cluster
 
 ##### Install WSO2 API Manager Analytics
 
@@ -86,7 +86,7 @@ cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/wor
 
 - Start WSO2 API Manager Analytics server
 
-*Note:* Make sure WSO2 API Manager Analytics server can be accessible from K8s
+*Note:* Make sure WSO2 API Manager Analytics server can be accessible from K8s cluster
 
 ##### Install WSO2 Istio Mixer Adapter
 
@@ -105,6 +105,11 @@ Update API Manager credentials for OAuth2 token validation - install/adapter-art
 ```
 apim-url: https://wso2.apim.com:9443      
 server-token: YWRtaW46YWRtaW4=  (Base 64 encoded username:password)
+```
+
+*Note:* Hostname verification is disabled by default for OAuth2 token validation service call. You can enable by changing the config in install/adapter-artifacts/wso2-operator-config.yaml
+```
+disable_hostname_verification: "false"
 ```
 
 Update API Manager Analytics endpoints for gRPC event publishing for analytics - install/adapter-artifacts/wso2-operator-config.yaml
@@ -235,7 +240,7 @@ curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer OAuth2
 
 ##### Access Analytics
 
-- Access Publisher and Store for analytics
+- Access WSO2 API Manager Publisher and Store for analytics
 
 ### Cleanup
 
