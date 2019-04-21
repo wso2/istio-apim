@@ -28,10 +28,10 @@ spec:
    #address: "35.184.34.117:44225"
  params:
    validate_subscription: "true"
-   disable_hostname_verification: "false"
-   request_stream_app_url: "35.193.189.184:7575"
-   fault_stream_app_url: "35.193.189.184:7576"
-   throttle_stream_app_url: "35.193.189.184:7577"
+   disable_hostname_verification: "true"
+   request_stream_app_url: "35.193.189.184:7575"              # FIX ME: API Manager Analytics IP Address
+   fault_stream_app_url: "35.193.189.184:7576"                # FIX ME: API Manager Analytics IP Address
+   throttle_stream_app_url: "35.193.189.184:7577"             # FIX ME: API Manager Analytics IP Address
    grpc_pool_size: "5"
    grpc_pool_initial_size: "1"
 ---

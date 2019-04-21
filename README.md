@@ -46,50 +46,90 @@ Using WSO2 adapter, users can do the following.
 - Secure service with JWT and OAuth2 tokens
 - Validate API subscriptions
 - Validate scopes
+- Use WSO2 API Manager Analytics for business insights
 
-### Installation of the mixer adapter
+### Installation
 
 ##### Prerequisites
 
 - [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/) 
 - [WSO2 API Manager 2.6.0 or above](https://wso2.com/api-management/)
-- [Istio-apim release: wso2am-istio-0.6.zip](https://github.com/wso2/istio-apim/releases/tag/0.6)
+- [WSO2 API Manager Analytics 2.6.0 or above](https://wso2.com/api-management/)
+- [Istio-apim release: wso2am-istio-0.8.zip](https://github.com/wso2/istio-apim/releases/tag/0.8)
 
 Notes: 
 
 - The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
 - In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
-- wso2am-istio-0.6.zip contains artifacts to deploy in the Istio.
+- wso2am-istio-0.8.zip contains artifacts to deploy in the Istio.
 
-##### Enable Istio side car injection for the default namespace 
+##### Install WSO2 API Manager
+
+- [Enable Analytics](https://docs.wso2.com/display/AM260/Configuring+APIM+Analytics) 
+- Start WSO2 API Manager server
+
+*Note:* Make sure WSO2 API Manager server can be accessible from K8s
+
+##### Install WSO2 API Manager Analytics
+
+- Copy gRPC and supportive jars to lib directory in the analytics server
+
+```
+cp install/analytics/lib/* <WSO2_API_Manager_Analytics_Server>/lib/
+```
+
+- Copy updated Siddhi files to siddhi-files directory in the analytics server
+
+```
+cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/worker/deployment/siddhi-files/
+```
+
+- Start WSO2 API Manager Analytics server
+
+*Note:* Make sure WSO2 API Manager Analytics server can be accessible from K8s
+
+##### Install WSO2 Istio Mixer Adapter
+
+- Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
+
+```
+kubectl create secret generic server-cert --from-file=./install/adapter-artifacts/server.pem -n istio-system
+```
+
+*Note:* The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem.
+
+- Update WSO2 API Manager and Analytics credentials (Optional)
+
+Update API Manager credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
+
+```
+apim-url: https://wso2.apim.com:9443      
+server-token: YWRtaW46YWRtaW4=  (Base 64 encoded username:password)
+```
+
+Update API Manager Analytics endpoints for gRPC event publishing for analytics - install/adapter-artifacts/wso2-operator-config.yaml
+
+```
+request_stream_app_url: "wso2.apim.analytics.com:7575"             
+fault_stream_app_url: "wso2.apim.analytics.com:7576"               
+throttle_stream_app_url: "wso2.apim.analytics.com:7577"
+```
+
+*Note:* 7575, 7576, 7577 are gRPC ports used for data publishing.
+
+- Deploy the wso2-adapter as a cluster service
+
+```
+kubectl apply -f install/adapter-artifacts/
+```
+
+### Deploy a microservice in Istio
+
+- Enable Istio side car injection for the default namespace if it not enabled
 
 ```
 kubectl label namespace default istio-injection=enabled
 ```
-
-##### Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
-
-```
-kubectl create secret generic server-cert --from-file=./install/server.pem -n istio-system
-```
-
-*Note:* The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem. Using this server certificate, you can do the JWT token validation. 
-If you want to do the OAuth2 token validation, then deploy WSO2 API Manager in K8s or any accessible location. Use that certificate to create the secret.
-
-##### Deploy the wso2-adapter as a cluster service
-
-```
-kubectl apply -f install/
-```
-
-*Note:* If you want to use OAuth2 token validation, then update the apim-url and server-token of the WSO2 API Manager in install/wso2-adapter.yaml file.
-
-Sample values: 
-
-apim-url: https://wso2apim-with-analytics-apim-service.wso2.svc:9443      
-server-token: YWRtaW46YWRtaW4=  (Base 64 encoded username:password)
-
-### Deploy a microservice in Istio
 
 - Deploy httpbin sample service
 
@@ -123,10 +163,12 @@ Log into WSO2 API Manager publisher and create an API with the following details
 
 Add the following resources with these scopes.
 
-| Resource        | Scope            | 
-|:--------------- |:---------------- |
-| /ip             | scope_ip         | 
-| /headers        | scope_headers    |  
+| Resource              | Scope            | 
+|:--------------------- |:---------------- |
+| /ip                   | scope_ip         | 
+| /headers              | scope_headers    |  
+| /delay/{delay}        | -                |  
+| /status/{status_code} | -                |  
 
 
 ##### Bind the API to the service for subscription validation and scope validation.
@@ -191,10 +233,14 @@ When accessing the service, provide the authorization header as follows.
 curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer OAuth2_ACCESS_TOKEN"
 ```
 
+##### Access Analytics
+
+- Access Publisher and Store for analytics
+
 ### Cleanup
 
 ```
 kubectl delete -f samples/httpbin
-kubectl delete -f install/
+kubectl delete -f install/adapter-artifacts/
 kubectl delete secrets server-cert -n istio-system
 ```

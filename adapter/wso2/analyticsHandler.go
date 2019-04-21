@@ -56,7 +56,7 @@ func publishEvents(configs map[string]string, requests map[int]Request, requestT
 		_, err := c.Report(context.Background(), &report.ReportRequest{StringValues: request.stringValues,
 			LongValues: request.longValues, IntValues: request.intValues, BooleanValues: request.booleanValues})
 		if err != nil {
-			log.Fatalf("Error when calling SayHello: %s", err)
+			log.Fatalf("Error when reporting metrics: %v", err)
 		}
 
 	}

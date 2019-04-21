@@ -112,6 +112,9 @@ const soapDefinition = "http://org.apache.axis2/xsd"
 func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl string, requestAttributes map[string]string,
 	disableHostnameVerification bool) (bool, TokenData, error) {
 
+	var oauthError error
+	var tokenData TokenData
+
 	accessToken := requestAttributes["access-token"]
 	apiContext := requestAttributes["api-context"]
 	apiVersion := requestAttributes["api-version"]
@@ -132,7 +135,8 @@ func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl stri
 
 	output, err := xml.MarshalIndent(name, "  ", "    ")
 	if err != nil {
-		log.Errorf("Error in creating the soap request: ", err)
+		log.Errorf("Error in creating the soap request: %v", err)
+		return handleErrors(tokenData, oauthError)
 	}
 
 	//http client initialization
@@ -148,7 +152,8 @@ func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl stri
 	//send a new POST request
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(output)))
 	if err != nil {
-		log.Errorf("Error in sending the POST request: ", err)
+		log.Errorf("Error in sending the POST request: %v", err)
+		return handleErrors(tokenData, oauthError)
 	}
 
 	request.Header.Set("Content-Type", "application/soap+xml;charset=UTF-8")
@@ -157,38 +162,46 @@ func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl stri
 
 	response, err := client.Do(request)
 	if err != nil {
-		log.Errorf("Error in response: ", err)
+		log.Errorf("Error in response: %v", err)
+		return handleErrors(tokenData, oauthError)
 	}
 
 	//Read response body
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Errorf("Error in reading response body: ", err)
+		log.Errorf("Error in reading response body: %v", err)
+		return handleErrors(tokenData, oauthError)
 	}
 
 	//validating response body
 	vrb := &ValidateResponseBody{}
 	unmarshalErr := xml.Unmarshal(body, vrb)
 	if unmarshalErr != nil {
-		log.Errorf("Error in unmarshalling: ", unmarshalErr)
+		log.Errorf("Error in unmarshalling: %v", unmarshalErr)
+		return handleErrors(tokenData, oauthError)
 	}
 
 	//return authorized status
 	isTokenAuthorized, _ := strconv.ParseBool(vrb.Body.ValidateKeyResponse.Return.Authorized)
-	var oauthError error
 
 	if !isTokenAuthorized {
 		oauthError = UnauthorizedError
-	}
-
-	var tokenData TokenData
-
-	if isTokenAuthorized {
+	} else {
 		tokenData = getTokenDataForOAuth2(vrb)
 	}
+
+	log.Infof("OAuth2 token is authorized - %v", isTokenAuthorized)
 	return isTokenAuthorized, tokenData, oauthError
 }
 
+// handle errors
+func handleErrors(tokenData TokenData, oauthError error) (bool, TokenData, error) {
+
+	oauthError = UnauthorizedError
+	return false, tokenData, oauthError
+}
+
+// get token data for OAuth2
 func getTokenDataForOAuth2(vrb *ValidateResponseBody) TokenData {
 
 	var tokenData TokenData

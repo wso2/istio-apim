@@ -35,7 +35,6 @@ import (
 	"istio.io/istio/mixer/template/authorization"
 	"istio.io/istio/mixer/template/metric"
 	"istio.io/istio/pkg/log"
-	logg "log"
 	"net"
 	"strconv"
 	"strings"
@@ -87,14 +86,116 @@ var _ authorization.HandleAuthorizationServiceServer = &Wso2{}
 var _ metric.HandleMetricServiceServer = &Wso2{}
 
 const (
-	requestStream string = "request-stream"
-	faultStream string = "fault-stream"
-	throttleStream string = "throttle-stream"
-	grpcPoolSize string = "grpc-pool-size"
+	requestStream       string = "request-stream"
+	faultStream         string = "fault-stream"
+	throttleStream      string = "throttle-stream"
+	grpcPoolSize        string = "grpc-pool-size"
 	grpcPoolInitialSize string = "grpc-pool-initial-size"
 )
+
 var UnauthorizedError = errors.New("Invalid access token")
 var GlobalCache = cache.New(5*time.Minute, 10*time.Minute)
+
+// Handle authorization
+func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleAuthorizationRequest) (*v1beta1.CheckResult, error) {
+
+	startTime := time.Now().UnixNano() / int64(time.Millisecond)
+
+	cfg := &config.Params{}
+
+	if r.AdapterConfig != nil {
+		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
+			log.Errorf("Error while unmarshalling adapter config: %v", err)
+			return nil, err
+		}
+	}
+
+	props := decodeValueMap(r.Instance.Subject.Properties)
+
+	authHeaderValue := props["auth_header_value"].(string)
+	apiName := props["api_name"].(string)
+	apiVersion := props["api_version"].(string)
+	apiContext := props["api_context"].(string)
+	requestResource := props["request_resource"].(string)
+	requestMethod := props["request_method"].(string)
+	requestScope := props["request_scope"].(string)
+
+	if len(strings.TrimSpace(authHeaderValue)) == 0 {
+
+		log.Errorf("Failure.. due to missing credentials")
+		return &v1beta1.CheckResult{
+			Status: status.WithUnauthenticated("Missing Credentials..."),
+		}, nil
+	}
+	headerValues := strings.Split(authHeaderValue, " ")
+
+	if len(headerValues) < 2 {
+
+		log.Errorf("Failure.. due to invalid credentials")
+		return &v1beta1.CheckResult{
+			Status: status.WithUnauthenticated("Missing Credentials..."),
+		}, nil
+	}
+
+	accessToken := headerValues[1]
+	validateSubscription, _ := strconv.ParseBool(cfg.ValidateSubscription)
+	disableHostnameVerification, _ := strconv.ParseBool(cfg.DisableHostnameVerification)
+
+	tokenContent := strings.Split(accessToken, ".")
+	var result bool
+	var err error
+	var tokenData TokenData
+
+	var requestAttributes = map[string]string{
+		"api-name":         apiName,
+		"api-version":      apiVersion,
+		"api-context":      apiContext,
+		"request-resource": requestResource,
+		"request-method":   requestMethod,
+		"access-token":     accessToken,
+		"request-scope":    requestScope,
+	}
+
+	if len(tokenContent) == 1 {
+		serverToken := "Basic " + s.apimServerToken
+		result, tokenData, err = HandleOauth2AccessToken(serverToken, s.caCert, s.apimUrl, requestAttributes,
+			disableHostnameVerification)
+	} else {
+		result, tokenData, err = HandleJWT(validateSubscription, s.caCert, requestAttributes)
+	}
+
+	endTime := time.Now().UnixNano() / int64(time.Millisecond)
+	serviceTime := endTime - startTime
+	tokenData.serviceTime = serviceTime
+	GlobalCache.Set(accessToken, &tokenData, cache.DefaultExpiration)
+
+	if err != nil {
+
+		log.Infof("Failure..")
+		if err == UnauthorizedError {
+			return &v1beta1.CheckResult{
+				Status: status.WithUnauthenticated("Unauthorized!"),
+			}, nil
+
+		} else {
+			return &v1beta1.CheckResult{
+				Status: status.WithPermissionDenied(err.Error()),
+			}, nil
+		}
+	}
+
+	if result {
+		log.Infof("success!!")
+		return &v1beta1.CheckResult{
+			Status: status.OK,
+		}, nil
+	}
+
+	log.Infof("Failure..")
+	return &v1beta1.CheckResult{
+		Status: status.WithPermissionDenied("Unauthorized..."),
+	}, nil
+}
 
 // HandleMetric records metric entries
 func (s *Wso2) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
@@ -103,7 +204,7 @@ func (s *Wso2) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) 
 
 	if r.AdapterConfig != nil {
 		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
-			log.Errorf("error unmarshalling adapter config: %v", err)
+			log.Errorf("Error unmarshalling adapter config: %v", err)
 			return nil, err
 		}
 	}
@@ -111,7 +212,6 @@ func (s *Wso2) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) 
 	successRequests, faultRequests := getRequests(r.Instances)
 	_, _ = HandleAnalytics(getAnalyticsConfigs(cfg), successRequests, faultRequests)
 
-	log.Infof("done in metrics -------------- !!")
 	return &v1beta1.ReportResult{}, nil
 }
 
@@ -290,7 +390,7 @@ func getRequests(in []*metric.InstanceMsg) (map[int]Request, map[int]Request) {
 			successRequests[i] = request
 		} else if requestType == faultStream {
 			stringValues["hostname"] = apiHostname
-			stringValues["errorCode"] = "0"
+			stringValues["errorCode"] = strconv.FormatInt(responseCode, 10)
 			stringValues["errorMessage"] = "Error"
 			faultRequests[i] = request
 		}
@@ -301,7 +401,7 @@ func getRequests(in []*metric.InstanceMsg) (map[int]Request, map[int]Request) {
 }
 
 // get request type
-func getRequestType(responseCode int64) string  {
+func getRequestType(responseCode int64) string {
 
 	var requestType string
 
@@ -313,6 +413,7 @@ func getRequestType(responseCode int64) string  {
 
 	return requestType
 }
+
 // get the unix time for the given property value
 func getUnixTime(property string, dimensions map[string]interface{}) int64 {
 
@@ -327,113 +428,6 @@ func getUnixTime(property string, dimensions map[string]interface{}) int64 {
 	}
 
 	return timeValue.UnixNano() / int64(time.Millisecond)
-}
-
-// Handle authorization
-func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleAuthorizationRequest) (*v1beta1.CheckResult, error) {
-
-	logg.Println("Inside Auth 8888888888888888888888888")
-	startTime := time.Now().UnixNano() / int64(time.Millisecond)
-
-	cfg := &config.Params{}
-
-	if r.AdapterConfig != nil {
-		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
-			log.Errorf("Error while unmarshalling adapter config: %v", err)
-			return nil, err
-		}
-	}
-
-	props := decodeValueMap(r.Instance.Subject.Properties)
-
-	authHeaderValue := props["auth_header_value"].(string)
-	apiName := props["api_name"].(string)
-	apiVersion := props["api_version"].(string)
-	apiContext := props["api_context"].(string)
-	requestResource := props["request_resource"].(string)
-	requestMethod := props["request_method"].(string)
-	requestScope := props["request_scope"].(string)
-
-	if len(strings.TrimSpace(authHeaderValue)) == 0 {
-
-		log.Infof("Failure.. due to missing credentials")
-		return &v1beta1.CheckResult{
-			Status: status.WithUnauthenticated("Missing Credentials..."),
-		}, nil
-	}
-	headerValues := strings.Split(authHeaderValue, " ")
-
-	if len(headerValues) < 2 {
-
-		log.Infof("Failure.. due to invalid credentials")
-		return &v1beta1.CheckResult{
-			Status: status.WithUnauthenticated("Missing Credentials..."),
-		}, nil
-	}
-
-	accessToken := headerValues[1]
-	validateSubscription, _ := strconv.ParseBool(cfg.ValidateSubscription)
-	disableHostnameVerification, _ := strconv.ParseBool(cfg.DisableHostnameVerification)
-
-	tokenContent := strings.Split(accessToken, ".")
-	var result bool
-	var err error
-	var tokenData TokenData
-
-	var requestAttributes = map[string]string{
-		"api-name":         apiName,
-		"api-version":      apiVersion,
-		"api-context":      apiContext,
-		"request-resource": requestResource,
-		"request-method":   requestMethod,
-		"access-token":     accessToken,
-		"request-scope":    requestScope,
-	}
-
-	if len(tokenContent) == 1 {
-		serverToken := "Basic " + s.apimServerToken
-		result, tokenData, err = HandleOauth2AccessToken(serverToken, s.caCert, s.apimUrl, requestAttributes,
-			disableHostnameVerification)
-	} else {
-		result, tokenData, err = HandleJWT(validateSubscription, s.caCert, requestAttributes)
-	}
-
-	endTime := time.Now().UnixNano() / int64(time.Millisecond)
-	serviceTime := endTime - startTime
-	tokenData.serviceTime = serviceTime
-	GlobalCache.Set(accessToken, &tokenData, cache.DefaultExpiration)
-
-	logg.Println("Service timeeeeeeeeeeeeeeeeee0000 ")
-	logg.Println(serviceTime)
-	logg.Println(endTime)
-	logg.Println(startTime)
-
-	if err != nil {
-
-		if err == UnauthorizedError {
-			return &v1beta1.CheckResult{
-				Status: status.WithUnauthenticated("Unauthorized!"),
-			}, nil
-
-		} else {
-			return &v1beta1.CheckResult{
-				Status: status.WithPermissionDenied(err.Error()),
-			}, nil
-		}
-
-	}
-
-	if result {
-		log.Infof("success!!")
-		return &v1beta1.CheckResult{
-			Status: status.OK,
-		}, nil
-	}
-
-	log.Infof("Failure..")
-	return &v1beta1.CheckResult{
-		Status: status.WithPermissionDenied("Unauthorized..."),
-	}, nil
 }
 
 // Addr returns the listening address of the server

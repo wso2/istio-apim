@@ -140,6 +140,30 @@
                 </dependencies>
             </plugin>
 
+            <!-- Copy jars to install directory -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.2</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/../../../install/analytics/lib/</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/files/lib/</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

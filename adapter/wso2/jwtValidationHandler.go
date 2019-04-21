@@ -64,6 +64,7 @@ type Subscription struct {
 
 var Unknown = "__unknown__"
 
+// handle JWT token
 func HandleJWT(validateSubscription bool, publicCert []byte, requestAttributes map[string]string) (bool, TokenData, error) {
 
 	accessToken := requestAttributes["access-token"]
@@ -104,7 +105,7 @@ func HandleJWT(validateSubscription bool, publicCert []byte, requestAttributes m
 
 		subscription := getSubscription(jwtData, apiName, apiVersion)
 
-		if &subscription == nil {
+		if (Subscription{}) == subscription {
 			return false, tokenData, errors.New("Resource forbidden")
 		}
 
@@ -149,7 +150,7 @@ func isTokenExpired(jwtData *JWTData) bool {
 	expireTime := int64(jwtData.Exp)
 
 	if expireTime < nowTime {
-		log.Infof("Token is expired!")
+		log.Warnf("Token is expired!")
 		return true
 	}
 
@@ -165,12 +166,11 @@ func isRequestScopeValid(jwtData *JWTData, requestScope string) bool {
 
 		for _, tokenScope := range tokenScopes {
 			if requestScope == tokenScope {
-				log.Infof("Matching scopes found!")
 				return true
 			}
 
 		}
-		log.Infof("No matching scopes found!")
+		log.Warnf("No matching scopes found!")
 		return false
 	}
 
@@ -195,10 +195,11 @@ func getSubscription(jwtData *JWTData, apiName string, apiVersion string) Subscr
 		}
 	}
 
-	log.Infof("Subscription is not valid!")
+	log.Warnf("Subscription is not valid for API - %v %v", apiName, apiVersion)
 	return subscription
 }
 
+// get token data for JWT
 func getTokenDataForJWT(jwtData *JWTData, apiName string, apiVersion string) TokenData {
 
 	var tokenData TokenData
