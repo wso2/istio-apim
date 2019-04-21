@@ -3,7 +3,6 @@ syntax = "proto3";
 // config for wso2
 package adapter.wso2.config;
 
-import "gogoproto/gogo.proto";
 
 option go_package="config";
 

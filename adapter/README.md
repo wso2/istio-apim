@@ -86,13 +86,13 @@ go build ./...
 ##### 6. Copy adapter artifacts
 
 ```
-mkdir -p $MIXER_REPO/adapter/wso2/install
-cp $MIXER_REPO/adapter/wso2/config/wso2.yaml $MIXER_REPO/adapter/wso2/install
-cp $ROOT_FOLDER/../install/attributes.yaml $MIXER_REPO/adapter/wso2/install
-cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/install/auth-template.yaml
-cp $MIXER_REPO/template/metric/template.yaml $MIXER_REPO/adapter/wso2/install/metric-template.yaml
-cp $ROOT_FOLDER/../install/wso2-operator-config.yaml $MIXER_REPO/adapter/wso2/install
-cp $ROOT_FOLDER/../install/wso2-adapter.yaml $MIXER_REPO/adapter/wso2/install
+mkdir -p $MIXER_REPO/adapter/wso2/install/adapter-artifacts
+cp $MIXER_REPO/adapter/wso2/config/wso2.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
+cp $ROOT_FOLDER/../install/adapter-artifacts/attributes.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
+cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/auth-template.yaml
+cp $MIXER_REPO/template/metric/template.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/metric-template.yaml
+cp $ROOT_FOLDER/../install/adapter-artifacts/wso2-operator-config.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
+cp $ROOT_FOLDER/../install/adapter-artifacts/wso2-adapter.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
 ```
 
 Note: template.yaml is taken from the Istio repository. attributes, wso2-operator-config.yaml and wso2-adapter is taken from istio-apim repo.
@@ -119,14 +119,14 @@ Note: Push this docker image to a docker registry which can be accessed from the
 ##### 9. Create a K8s secret in istio-system for the public certificate of WSO2 API Manager as follows.
 
 ```
-kubectl create secret generic server-cert --from-file=$ROOT_FOLDER/../install/server.pem -n istio-system
+kubectl create secret generic server-cert --from-file=$ROOT_FOLDER/../install/adapter-artifacts/server.pem -n istio-system
 ```
 
 ##### 10. Deploy the wso2-adapter as a cluster service
 
 ```
-kubectl apply -f $MIXER_REPO/adapter/wso2/install/
-kubectl delete -f $MIXER_REPO/adapter/wso2/install/
+kubectl apply -f $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
+kubectl delete -f $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
 ```
 
 ##### 11. Deploy the api and the rule for the service
