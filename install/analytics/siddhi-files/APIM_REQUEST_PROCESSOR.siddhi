@@ -18,7 +18,6 @@
 @App:description('Receive the request stream and load the configuration tables to in memeory.')
 
 -- Streams
-@sink(type='log')
 @source(type="telemetry-receiver", port="7575", @map(type="keyvalue", fail.on.missing.attribute="false"))
 @source(type = 'mgwfile', wso2.stream.id = 'org.wso2.apimgt.statistics.request:3.0.0', @map(type = 'wso2event'))
 @source(type = 'wso2event', wso2.stream.id = 'org.wso2.apimgt.statistics.request:3.0.0', @map(type = 'wso2event'))

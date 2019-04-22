@@ -27,16 +27,16 @@ import (
 )
 
 // handle metrics requests
-func HandleAnalytics(configs map[string]string, successRequests map[int]Request, faultRequests map[int]Request) (bool, error) {
+func HandleAnalytics(configs map[string]string, successRequests map[int]Request, faultRequests map[int]Request) {
 
 	publishEvents(configs, successRequests, requestStream)
 	publishEvents(configs, faultRequests, faultStream)
 
-	return true, nil
+	return
 }
 
 // publish events via gRPC
-func publishEvents(configs map[string]string, requests map[int]Request, requestType string) () {
+func publishEvents(configs map[string]string, requests map[int]Request, requestType string) {
 
 	if len(requests) == 0 {
 		return
@@ -67,16 +67,17 @@ func publishEvents(configs map[string]string, requests map[int]Request, requestT
 // create gRPC connection pool for the given target
 func createGrpcPool(targetUrl string, grpcPoolIntialSize int, grpcPoolSize int) (*grpcpool.Pool) {
 
-	factory1 := func() (*grpc.ClientConn, error) {
+	factory := func() (*grpc.ClientConn, error) {
 		conn, err := grpc.Dial(targetUrl, grpc.WithInsecure())
 		if err != nil {
 			log.Fatalf("Failed to start gRPC connection %v: %v", targetUrl, err)
+		} else {
+			log.Infof("Connected to gRPC server at %v", targetUrl)
 		}
-		log.Infof("Connected to gRPC server at %v", targetUrl)
 		return conn, err
 	}
 
-	pool, err := grpcpool.New(factory1, grpcPoolIntialSize, grpcPoolSize, time.Second)
+	pool, err := grpcpool.New(factory, grpcPoolIntialSize, grpcPoolSize, time.Second)
 	if err != nil {
 		log.Fatalf("Failed to create gRPC pool for target %v: %v", targetUrl, err)
 	}

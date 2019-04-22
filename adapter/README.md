@@ -1,6 +1,6 @@
 ## Developer Guide
 
-This guide is to create the adapter for token validation.
+This guide is to create the Istio Mixer Adapter.
 
 ##### Prerequisites
 

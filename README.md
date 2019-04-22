@@ -63,13 +63,6 @@ Notes:
 - In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 - wso2am-istio-0.8.zip contains artifacts to deploy in the Istio.
 
-##### Install WSO2 API Manager
-
-- [Enable Analytics](https://docs.wso2.com/display/AM260/Configuring+APIM+Analytics) 
-- Start WSO2 API Manager server
-
-*Note:* Make sure WSO2 API Manager server can be accessible from K8s cluster
-
 ##### Install WSO2 API Manager Analytics
 
 - Copy gRPC and supportive jars to lib directory in the analytics server
@@ -88,6 +81,13 @@ cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/wor
 
 *Note:* Make sure WSO2 API Manager Analytics server can be accessible from K8s cluster
 
+##### Install WSO2 API Manager
+
+- [Enable Analytics](https://docs.wso2.com/display/AM260/Configuring+APIM+Analytics) 
+- Start WSO2 API Manager server
+
+*Note:* Make sure WSO2 API Manager server can be accessible from K8s cluster
+
 ##### Install WSO2 Istio Mixer Adapter
 
 - Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
@@ -98,7 +98,7 @@ kubectl create secret generic server-cert --from-file=./install/adapter-artifact
 
 *Note:* The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem.
 
-- Update WSO2 API Manager and Analytics credentials (Optional)
+- Update WSO2 API Manager and Analytics credentials
 
 Update API Manager credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
 
@@ -151,6 +151,10 @@ kubectl create -f samples/httpbin/httpbin-gw.yaml
 - Access httpbin via Istio ingress gateway
 
 ```
+kubectl get svc istio-ingressgateway -n istio-system
+
+User EXTERNAL-IP as INGRESS_GATEWAY_IP
+
 curl http://${INGRESS_GATEWAY_IP}/31380/headers
 ```
 

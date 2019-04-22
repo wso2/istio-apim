@@ -19,7 +19,6 @@
 @App:name("APIM_FAULT_SUMMARY")
 @App:description("Defines aggregations for fault stream")
 
-@sink(type='log')
 @source(type="telemetry-receiver", port="7576", @map(type="keyvalue", fail.on.missing.attribute="false"))
 @source(type = 'mgwfile', wso2.stream.id = 'org.wso2.apimgt.statistics.fault:3.0.0', @map(type = 'wso2event'))
 @source(type = 'wso2event', wso2.stream.id = 'org.wso2.apimgt.statistics.fault:3.0.0',

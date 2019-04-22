@@ -210,7 +210,7 @@ func (s *Wso2) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) 
 	}
 
 	successRequests, faultRequests := getRequests(r.Instances)
-	_, _ = HandleAnalytics(getAnalyticsConfigs(cfg), successRequests, faultRequests)
+	HandleAnalytics(getAnalyticsConfigs(cfg), successRequests, faultRequests)
 
 	return &v1beta1.ReportResult{}, nil
 }
@@ -304,8 +304,6 @@ func getRequests(in []*metric.InstanceMsg) (map[int]Request, map[int]Request) {
 
 			booleanValues["throttledOut"] = tokenDataValues.throttledOut
 			serviceTime = tokenDataValues.serviceTime
-			longValues["serviceTime"] = serviceTime
-			longValues["securityLatency"] = serviceTime
 		}
 
 		apiContext := dimensions["api_context"].(string)
@@ -343,6 +341,8 @@ func getRequests(in []*metric.InstanceMsg) (map[int]Request, map[int]Request) {
 			serviceTime = 0
 		}
 
+		longValues["serviceTime"] = serviceTime
+		longValues["securityLatency"] = serviceTime
 		longValues["backendLatency"] = responseTime - serviceTime
 		longValues["backendTime"] = responseTime - serviceTime
 
