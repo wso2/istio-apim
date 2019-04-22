@@ -31,22 +31,6 @@ cd $ISTIO/istio
 git checkout 1.1.0
 ```
 
------------
-mkdir -p $GOPATH/src/github.com/golang/
-cd $GOPATH/src/github.com/golang/
-git clone https://github.com/golang/protobuf/
-
-mkdir -p $GOPATH/src/github.com/processout/
-cd $GOPATH/src/github.com/processout/
-git clone https://github.com/processout/grpc-go-pool
-
-mkdir -p $GOPATH/src/github.com/processout/
-cd $GOPATH/src/github.com/processout/
-git clone https://github.com/processout/grpc-go-pool
-
-golang.org/x/net/context
----------
-
 ##### 3. Build mixer server,client binary
 
 ```
@@ -78,8 +62,9 @@ cd $MIXER_REPO/adapter/wso2
 
 protoc -I $ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated/ -I${GOPATH}/src --go_out=plugins=grpc:$ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated/ $ROOT_FOLDER/src/org.wso2.apim.grpc.telemetry.receiver.generated/ReportService.proto
 
-
 go generate ./...
+rm  -r $ROOT_FOLDER/src/istio.io/istio/vendor/google.golang.org/grpc
+go get
 go build ./...
 ```
 
@@ -126,7 +111,6 @@ kubectl create secret generic server-cert --from-file=$ROOT_FOLDER/../install/ad
 
 ```
 kubectl apply -f $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
-kubectl delete -f $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
 ```
 
 ##### 11. Deploy the api and the rule for the service
