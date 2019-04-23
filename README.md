@@ -270,3 +270,15 @@ kubectl delete secrets server-cert -n istio-system
 
 ### Troubleshooting Guide
 
+- Figure out wso2 adapter pod name
+
+```
+kubectl get pods -n istio-system -l app=wso2adapter
+```
+
+- Browse the wso2 adapter log
+
+```
+kubectl logs -f <POD_NAME> -n istio-system
+```
+
