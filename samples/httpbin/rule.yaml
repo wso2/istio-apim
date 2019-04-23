@@ -26,3 +26,4 @@ spec:
     - handler: wso2-handler.istio-system
       instances:
         - wso2-authorization
+        - wso2-metric

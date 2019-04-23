@@ -19,8 +19,8 @@ metadata:
   namespace: istio-system
 type: Opaque
 stringData:
-  apim-url: https://wso2apim-with-analytics-apim-service.wso2.svc:9443      # FIX ME: API Manager URL
-  server-token: YWRtaW46YWRtaW4=                                            # FIX ME: API Manager Credentials (Base 64 encoded username:password)
+  apim-url: https://wso2-apim:9443            # FIX ME: API Manager URL
+  server-token: YWRtaW46YWRtaW4=               # FIX ME: API Manager Credentials (Base 64 encoded username:password)
 ---
 apiVersion: v1
 kind: Service
@@ -61,7 +61,7 @@ spec:
     spec:
       containers:
       - name: wso2adapter
-        image: wso2/apim-istio-mixer-adapter:0.6
+        image: wso2/apim-istio-mixer-adapter:0.8
         imagePullPolicy: Always
         ports:
         - containerPort: 44225
@@ -76,6 +76,7 @@ spec:
         - name: server-cert-volume
           secret:
             secretName: server-cert
+            optional: true
         - name: wso2server-secret-volume
           secret:
             secretName: wso2server-secret

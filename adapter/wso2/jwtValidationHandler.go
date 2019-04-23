@@ -22,9 +22,9 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"istio.io/istio/pkg/log"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 )
 
 type JWTData struct {
@@ -53,8 +53,19 @@ type JWTData struct {
 	Jti         string `json:"jti"`
 }
 
+type Subscription struct {
+	name                   string
+	context                string
+	version                string
+	publisher              string
+	subscriptionTier       string
+	subscriberTenantDomain string
+}
 
-func HandleJWT(validateSubscription string, publicCert []byte, requestAttributes map[string]string) (bool , error) {
+var Unknown = "__unknown__"
+
+// handle JWT token
+func HandleJWT(validateSubscription bool, publicCert []byte, requestAttributes map[string]string) (bool, TokenData, error) {
 
 	accessToken := requestAttributes["access-token"]
 	apiName := requestAttributes["api-name"]
@@ -62,42 +73,46 @@ func HandleJWT(validateSubscription string, publicCert []byte, requestAttributes
 	requestScope := requestAttributes["request-scope"]
 
 	tokenContent := strings.Split(accessToken, ".")
+	var tokenData TokenData
 
 	if len(tokenContent) != 3 {
 		log.Errorf("Invalid JWT token received, token must have 3 parts")
-		return false, UnauthorizedError
+		return false, tokenData, UnauthorizedError
 	}
 
 	signedContent := tokenContent[0] + "." + tokenContent[1]
-	err := validateSignature(publicCert, signedContent, tokenContent[2] )
+	err := validateSignature(publicCert, signedContent, tokenContent[2])
 	if err != nil {
 		log.Errorf("Error in validating the signature: %v", err)
-		return false, UnauthorizedError
+		return false, tokenData, UnauthorizedError
 	}
 
 	jwtData, err := decodePayload(string(tokenContent[1]))
 	if jwtData == nil {
 		log.Errorf("Error in decoding the payload: %v", err)
-		return false, UnauthorizedError
+		return false, tokenData, UnauthorizedError
 	}
 
 	if isTokenExpired(jwtData) {
-		return false, UnauthorizedError
+		return false, tokenData, UnauthorizedError
 	}
 
 	if !isRequestScopeValid(jwtData, requestScope) {
-		return false, UnauthorizedError
+		return false, tokenData, UnauthorizedError
 	}
 
-	validateSub, _ := strconv.ParseBool(validateSubscription)
-	if validateSub {
-		if isSubscriptionValid(jwtData, apiName, apiVersion) {
-			return true, nil
+	if validateSubscription {
+
+		subscription := getSubscription(jwtData, apiName, apiVersion)
+
+		if (Subscription{}) == subscription {
+			return false, tokenData, errors.New("Resource forbidden")
 		}
-		return false, errors.New("Resource forbidden")
+
+		return true, getTokenDataForJWT(jwtData, apiName, apiVersion), nil
 	}
 
-	return true, nil
+	return true, getTokenDataForJWT(jwtData, apiName, apiVersion), nil
 }
 
 // validate the signature
@@ -135,7 +150,7 @@ func isTokenExpired(jwtData *JWTData) bool {
 	expireTime := int64(jwtData.Exp)
 
 	if expireTime < nowTime {
-		log.Infof("Token is expired!")
+		log.Warnf("Token is expired!")
 		return true
 	}
 
@@ -151,12 +166,11 @@ func isRequestScopeValid(jwtData *JWTData, requestScope string) bool {
 
 		for _, tokenScope := range tokenScopes {
 			if requestScope == tokenScope {
-				log.Infof("Matching scopes found!")
 				return true
 			}
 
 		}
-		log.Infof("No matching scopes found!")
+		log.Warnf("No matching scopes found!")
 		return false
 	}
 
@@ -164,16 +178,55 @@ func isRequestScopeValid(jwtData *JWTData, requestScope string) bool {
 	return true
 }
 
-// do the subscription validation
-func isSubscriptionValid(jwtData *JWTData, apiName string, apiVersion string) bool {
+// get the subscription
+func getSubscription(jwtData *JWTData, apiName string, apiVersion string) Subscription {
 
+	var subscription Subscription
 	for _, api := range jwtData.SubscribedAPIs {
 
 		if (strings.ToLower(apiName) == strings.ToLower(api.Name)) && apiVersion == api.Version {
-			return true
+			subscription.name = apiName
+			subscription.version = apiVersion
+			subscription.context = api.Context
+			subscription.publisher = api.Publisher
+			subscription.subscriptionTier = api.SubscriptionTier
+			subscription.subscriberTenantDomain = api.SubscriberTenantDomain
+			return subscription
 		}
 	}
 
-	log.Infof("Subscription is not valid!")
-	return false
+	log.Warnf("Subscription is not valid for API - %v %v", apiName, apiVersion)
+	return subscription
+}
+
+// get token data for JWT
+func getTokenDataForJWT(jwtData *JWTData, apiName string, apiVersion string) TokenData {
+
+	var tokenData TokenData
+
+	tokenData.authorized = true
+	tokenData.meta_clientType = jwtData.Keytype
+	tokenData.applicationConsumerKey = jwtData.ConsumerKey
+	tokenData.applicationName = jwtData.Application.Name
+	tokenData.applicationId = strconv.Itoa(jwtData.Application.ID)
+	tokenData.applicationOwner = jwtData.Application.Owner
+
+	subscription := getSubscription(jwtData, apiName, apiVersion)
+
+	if &subscription == nil {
+		tokenData.apiCreator = Unknown
+		tokenData.apiCreatorTenantDomain = Unknown
+		tokenData.apiTier = Unknown
+		tokenData.userTenantDomain = Unknown
+	} else {
+		tokenData.apiCreator = subscription.publisher
+		tokenData.apiCreatorTenantDomain = subscription.subscriberTenantDomain
+		tokenData.apiTier = subscription.subscriptionTier
+		tokenData.userTenantDomain = subscription.subscriberTenantDomain
+	}
+
+	tokenData.username = jwtData.Sub
+	tokenData.throttledOut = false
+
+	return tokenData
 }

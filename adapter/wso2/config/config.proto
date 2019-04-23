@@ -3,7 +3,6 @@ syntax = "proto3";
 // config for wso2
 package adapter.wso2.config;
 
-import "gogoproto/gogo.proto";
 
 option go_package="config";
 
@@ -12,4 +11,24 @@ message Params {
 
     // enable subscription validation
     string validate_subscription = 1;
+
+    // disable hostname verification
+    string disable_hostname_verification = 2;
+
+    // request stream url of the Siddhi app for gRPC
+    string request_stream_app_url = 3;
+
+    // fault stream url of the Siddhi app for gRPC
+    string fault_stream_app_url = 4;
+
+    // throttle stream url of the Siddhi app for gRPC
+    string throttle_stream_app_url = 5;
+
+    // size of the gRPC connection pool
+    string grpc_pool_size = 6;
+
+    // initial gRPC connections
+    string grpc_pool_initial_size = 7;
+
 }
+
