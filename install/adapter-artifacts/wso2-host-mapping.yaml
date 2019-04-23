@@ -15,7 +15,7 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: istio.wso2.com
+  name: wso2-apim
   namespace: istio-system
 spec:
   type: ClusterIP
@@ -36,7 +36,7 @@ spec:
 kind: Endpoints
 apiVersion: v1
 metadata:
-  name: istio.wso2.com
+  name: wso2-apim
   namespace: istio-system
 subsets:
   - addresses:

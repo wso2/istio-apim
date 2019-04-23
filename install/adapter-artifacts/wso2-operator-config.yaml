@@ -29,9 +29,9 @@ spec:
  params:
    validate_subscription: "true"
    disable_hostname_verification: "true"
-   request_stream_app_url: "istio.wso2.com:7575"              # FIX ME: API Manager Analytics IP Address/ Hostname
-   fault_stream_app_url: "istio.wso2.com:7576"                # FIX ME: API Manager Analytics IP Address/ Hostname
-   throttle_stream_app_url: "istio.wso2.com:7577"             # FIX ME: API Manager Analytics IP Address/ Hostname
+   request_stream_app_url: "wso2-apim:7575"              # FIX ME: API Manager Analytics IP Address/ Hostname
+   fault_stream_app_url: "wso2-apim:7576"                # FIX ME: API Manager Analytics IP Address/ Hostname
+   throttle_stream_app_url: "wso2-apim:7577"             # FIX ME: API Manager Analytics IP Address/ Hostname
    grpc_pool_size: "5"
    grpc_pool_initial_size: "1"
 ---

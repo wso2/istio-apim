@@ -61,7 +61,7 @@ Using WSO2 adapter, users can do the following.
 
 - The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
 - In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, the policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
-- wso2am-istio-0.8.zip contains artifacts to deploy in the Istio.
+- wso2am-istio-0.8.zip contains installation artifacts to deploy in the Istio, WSO2 API Manager and WSO2 API Manager Analytics.
 
 ##### Install WSO2 API Manager Analytics
 
@@ -79,14 +79,14 @@ cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/wor
 
 - Start WSO2 API Manager Analytics server
 
-**Note:** Make sure WSO2 API Manager Analytics server can be accessible from K8s cluster
+**Note:** Make sure WSO2 API Manager Analytics server can be accessible from the K8s cluster
 
 ##### Install WSO2 API Manager
 
 - [Enable Analytics](https://docs.wso2.com/display/AM260/Configuring+APIM+Analytics) 
 - Start WSO2 API Manager server
 
-**Note:** Make sure WSO2 API Manager server can be accessible from K8s cluster
+**Note:** Make sure WSO2 API Manager server can be accessible from the K8s cluster
 
 ##### Install WSO2 Istio Mixer Adapter
 
@@ -96,18 +96,18 @@ cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/wor
 kubectl create secret generic server-cert --from-file=./install/adapter-artifacts/server.pem -n istio-system
 ```
 
-**Note:** The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem.
+**Note:** The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/adapter-artifacts/server.pem.
 
 - Update WSO2 API Manager URLs and credentials
 
 Update API Manager URLs and credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
 
 ```
-apim-url: https://istio.wso2.com:9443      
+apim-url: https://wso2-apim:9443      
 server-token: YWRtaW46YWRtaW4=  (Base 64 encoded username:password)
 ```
 
-You can keep the apim-url as istio.wso2.com and update the IP address in install/adapter-artifacts/wso2-host-mapping.yaml file.
+You can keep the apim-url as wso2-apim and update the IP address in install/adapter-artifacts/wso2-host-mapping.yaml file.
 
 ```
 ip: <IP_ADDRESS> 
@@ -121,9 +121,9 @@ disable_hostname_verification: "false"
 - Update API Manager Analytics endpoints for gRPC event publishing for analytics - install/adapter-artifacts/wso2-operator-config.yaml
 
 ```
-request_stream_app_url: "istio.wso2.com:7575"             
-fault_stream_app_url: "istio.wso2.com:7576"               
-throttle_stream_app_url: "istio.wso2.com:7577"
+request_stream_app_url: "wso2-apim:7575"             
+fault_stream_app_url: "wso2-apim:7576"               
+throttle_stream_app_url: "wso2-apim:7577"
 ```
 
 **Note:** 7575, 7576, 7577 are gRPC ports used for data publishing.
@@ -160,7 +160,7 @@ kubectl create -f samples/httpbin/httpbin-gw.yaml
 curl http://${INGRESS_GATEWAY_HOST}:{INGRESS_GATEWAY_PORT}/headers
 ```
 
-You can find INGRESS_GATEWAY_HOST and INGRESS_GATEWAY_PORT as follows.
+You can find INGRESS_GATEWAY_HOST and INGRESS_GATEWAY_PORT as follows. Else follow instructions in Istio [guide](https://istio.io/docs/tasks/traffic-management/ingress/#determining-the-ingress-ip-and-ports).
 
 ```
 - Use EXTERNAL-IP as INGRESS_GATEWAY_IP from the following command
