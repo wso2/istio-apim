@@ -57,7 +57,7 @@ Using WSO2 adapter, users can do the following.
 - [WSO2 API Manager Analytics 2.6.0 or above](https://wso2.com/api-management/)
 - [Istio-apim release: wso2am-istio-0.8.zip](https://github.com/wso2/istio-apim/releases/tag/0.8)
 
-Notes: 
+**Notes:** 
 
 - The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
 - In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
@@ -79,14 +79,14 @@ cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/wor
 
 - Start WSO2 API Manager Analytics server
 
-*Note:* Make sure WSO2 API Manager Analytics server can be accessible from K8s cluster
+**Note:** Make sure WSO2 API Manager Analytics server can be accessible from K8s cluster
 
 ##### Install WSO2 API Manager
 
 - [Enable Analytics](https://docs.wso2.com/display/AM260/Configuring+APIM+Analytics) 
 - Start WSO2 API Manager server
 
-*Note:* Make sure WSO2 API Manager server can be accessible from K8s cluster
+**Note:** Make sure WSO2 API Manager server can be accessible from K8s cluster
 
 ##### Install WSO2 Istio Mixer Adapter
 
@@ -96,31 +96,37 @@ cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/wor
 kubectl create secret generic server-cert --from-file=./install/adapter-artifacts/server.pem -n istio-system
 ```
 
-*Note:* The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem.
+**Note:** The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem.
 
-- Update WSO2 API Manager and Analytics credentials
+- Update WSO2 API Manager urls and credentials
 
-Update API Manager credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
+Update API Manager urls and credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
 
 ```
-apim-url: https://wso2.apim.com:9443      
+apim-url: https://istio.wso2.com:9443      
 server-token: YWRtaW46YWRtaW4=  (Base 64 encoded username:password)
 ```
 
-*Note:* Hostname verification is disabled by default for OAuth2 token validation service call. You can enable by changing the config in install/adapter-artifacts/wso2-operator-config.yaml
+You can keep the apim-url as istio.wso2.com and update the IP address in install/adapter-artifacts/wso2-host-mapping.yaml file.
+
+```
+ip: <IP_ADDRESS> 
+```
+
+**Note:** Hostname verification is disabled by default for OAuth2 token validation service call. You can enable by changing the config in install/adapter-artifacts/wso2-operator-config.yaml
 ```
 disable_hostname_verification: "false"
 ```
 
-Update API Manager Analytics endpoints for gRPC event publishing for analytics - install/adapter-artifacts/wso2-operator-config.yaml
+- Update API Manager Analytics endpoints for gRPC event publishing for analytics - install/adapter-artifacts/wso2-operator-config.yaml
 
 ```
-request_stream_app_url: "wso2.apim.analytics.com:7575"             
-fault_stream_app_url: "wso2.apim.analytics.com:7576"               
-throttle_stream_app_url: "wso2.apim.analytics.com:7577"
+request_stream_app_url: "istio.wso2.com:7575"             
+fault_stream_app_url: "istio.wso2.com:7576"               
+throttle_stream_app_url: "istio.wso2.com:7577"
 ```
 
-*Note:* 7575, 7576, 7577 are gRPC ports used for data publishing.
+**Note:** 7575, 7576, 7577 are gRPC ports used for data publishing.
 
 - Deploy the wso2-adapter as a cluster service
 
@@ -151,11 +157,19 @@ kubectl create -f samples/httpbin/httpbin-gw.yaml
 - Access httpbin via Istio ingress gateway
 
 ```
+curl http://${INGRESS_GATEWAY_HOST}:{INGRESS_GATEWAY_PORT}/headers
+```
+
+You can find INGRESS_GATEWAY_HOST and INGRESS_GATEWAY_PORT as follows.
+
+```
+- Use EXTERNAL-IP as INGRESS_GATEWAY_IP from the following command
 kubectl get svc istio-ingressgateway -n istio-system
 
-User EXTERNAL-IP as INGRESS_GATEWAY_IP
+- Use the output of the above as INGRESS_GATEWAY_PORT
+kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}'
 
-curl http://${INGRESS_GATEWAY_IP}/31380/headers
+Note: In Docker for Mac INGRESS_GATEWAY_PORT is port 80.
 ```
 
 ### Apply API Management for microservices
@@ -186,7 +200,7 @@ Add the following resources with these scopes.
 kubectl create -f samples/httpbin/api.yaml
 ```
 
-*Note:* You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
+**Note:** You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
 
 - api.service : name of the API              
 - api.version : version of the API           
@@ -209,7 +223,7 @@ The above values are used in the following verifications.
 kubectl create -f samples/httpbin/rule.yaml
 ```
 
-*Note:* This rule applies for any incoming request in the default namespace. 
+**Note:** This rule applies for any incoming request in the default namespace. 
 
 ##### Access the Service
 
@@ -225,7 +239,7 @@ kubectl create -f samples/httpbin/rule.yaml
 When accessing the service, provide the authorization header as follows.
 
 ```
-curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer JWT_ACCESS_TOKEN"
+curl http://${INGRESS_GATEWAY_HOST}:{INGRESS_GATEWAY_PORT}/headers -H "Authorization: Bearer JWT_ACCESS_TOKEN"
 ```
 
 2.) Using OAuth2 Tokens
@@ -239,7 +253,7 @@ curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer JWT_AC
 When accessing the service, provide the authorization header as follows.
 
 ```
-curl http://${INGRESS_GATEWAY_IP}/31380/headers -H "Authorization: Bearer OAuth2_ACCESS_TOKEN"
+curl http://${INGRESS_GATEWAY_HOST}:{INGRESS_GATEWAY_PORT}/headers -H "Authorization: Bearer OAuth2_ACCESS_TOKEN"
 ```
 
 ##### Access Analytics
@@ -253,3 +267,6 @@ kubectl delete -f samples/httpbin
 kubectl delete -f install/adapter-artifacts/
 kubectl delete secrets server-cert -n istio-system
 ```
+
+### Troubleshooting Guide
+
