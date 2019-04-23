@@ -40,7 +40,7 @@ metadata:
   namespace: istio-system
 subsets:
   - addresses:
-      - ip: 104.197.102.108                          # FIX ME: API Manager and Analytics IP Address
+      - ip: 0.0.0.0                          # FIX ME: API Manager and Analytics IP Address
     ports:
       - port: 9443
         name: "servlet"
