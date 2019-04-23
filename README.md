@@ -60,7 +60,7 @@ Using WSO2 adapter, users can do the following.
 **Notes:** 
 
 - The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
-- In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
+- In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, the policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 - wso2am-istio-0.8.zip contains artifacts to deploy in the Istio.
 
 ##### Install WSO2 API Manager Analytics
@@ -98,9 +98,9 @@ kubectl create secret generic server-cert --from-file=./install/adapter-artifact
 
 **Note:** The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/server.pem.
 
-- Update WSO2 API Manager urls and credentials
+- Update WSO2 API Manager URLs and credentials
 
-Update API Manager urls and credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
+Update API Manager URLs and credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
 
 ```
 apim-url: https://istio.wso2.com:9443      
