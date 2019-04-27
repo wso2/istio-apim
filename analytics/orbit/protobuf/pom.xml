@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.wso2.apim</groupId>
         <artifactId>org.wso2.apim.orbit</artifactId>
-        <version>0.8</version>
+        <version>1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>org.wso2.apim.components</artifactId>
     <groupId>org.wso2.apim</groupId>
-    <version>0.8</version>
+    <version>1.0</version>
     <name>WSO2 APIM gRPC Telemetry Receiver Components</name>
     <packaging>pom</packaging>
 

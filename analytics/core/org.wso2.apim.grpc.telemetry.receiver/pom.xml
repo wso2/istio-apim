@@ -22,14 +22,14 @@
     <parent>
         <groupId>org.wso2.apim</groupId>
         <artifactId>org.wso2.apim.core</artifactId>
-        <version>0.8</version>
+        <version>1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <packaging>bundle</packaging>
     <artifactId>org.wso2.apim.grpc.telemetry.receiver</artifactId>
-    <version>0.8</version>
+    <version>1.0</version>
     <name>WSO2 APIM gRPC Telemetry Receiver</name>
 
     <dependencies>

@@ -23,13 +23,13 @@
     <parent>
         <groupId>org.wso2.apim</groupId>
         <artifactId>org.wso2.apim.core</artifactId>
-        <version>0.8</version>
+        <version>1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>org.wso2.apim.proto</artifactId>
-    <version>0.8</version>
+    <version>1.0</version>
     <name>WSO2 APIM gRPC Proto</name>
 
     <dependencies>
