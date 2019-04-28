@@ -47,48 +47,45 @@ Using WSO2 adapter, users can do the following.
 - Validate API subscriptions
 - Validate scopes
 - Use WSO2 API Manager Analytics for business insights
+- WSO2 API Manager integration automates HTTPAPISpec, HTTPAPISpecBinding and rules creation for APIs
 
-### Installation
+### Quick Start Guide
 
 ##### Prerequisites
 
-- [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/) 
-- [WSO2 API Manager 2.6.0 or above](https://wso2.com/api-management/)
-- [WSO2 API Manager Analytics 2.6.0 or above](https://wso2.com/api-management/)
-- [Istio-apim release: wso2am-istio-0.8.zip](https://github.com/wso2/istio-apim/releases/tag/0.8)
+- [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/)
+- [Istio-apim release: wso2am-istio-1.0.zip](https://github.com/wso2/istio-apim/releases/tag/1.0)
 
 **Notes:** 
 
 - The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
 - In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, the policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
-- wso2am-istio-0.8.zip contains installation artifacts to deploy in the Istio, WSO2 API Manager and WSO2 API Manager Analytics.
+- wso2am-istio-1.0.zip contains installation artifacts to deploy in the Istio, WSO2 API Manager and WSO2 API Manager Analytics.
 
-##### Install WSO2 API Manager Analytics
+#### Install WSO2 API Manager Analytics
 
-- Copy gRPC and supportive jars to lib directory in the analytics server
-
-```
-cp install/analytics/lib/* <WSO2_API_Manager_Analytics_Server>/lib/
-```
-
-- Copy updated Siddhi files to siddhi-files directory in the analytics server
+- Deploy K8s artifacts for Analytics
 
 ```
-cp install/analytics/siddhi-files/* <WSO2_API_Manager_Analytics_Server>/wso2/worker/deployment/siddhi-files/
+kubectl apply -f install/analytics/k8s-artifacts/
 ```
 
-- Start WSO2 API Manager Analytics server
+#### Install WSO2 API Manager
 
-**Note:** Make sure WSO2 API Manager Analytics server can be accessible from the K8s cluster
+- Deploy config maps for API Manager
 
-##### Install WSO2 API Manager
+```
+kubectl create configmap apim-conf --from-file=./install/api-manager/resources/conf/ -n wso2
+kubectl create configmap apim-lifecycles --from-file=./install/api-manager/resources/lifecycles/ -n wso2
+```
 
-- [Enable Analytics](https://docs.wso2.com/display/AM260/Configuring+APIM+Analytics) 
-- Start WSO2 API Manager server
+- Deploy K8s artifacts for API Manager
 
-**Note:** Make sure WSO2 API Manager server can be accessible from the K8s cluster
+```
+kubectl apply -f install/api-manager/k8s-artifacts/
+```
 
-##### Install WSO2 Istio Mixer Adapter
+#### Install WSO2 Istio Mixer Adapter
 
 - Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
 
@@ -97,36 +94,6 @@ kubectl create secret generic server-cert --from-file=./install/adapter-artifact
 ```
 
 **Note:** The public certificate of WSO2 API Manager 2.6.0 GA can be found in install/adapter-artifacts/server.pem.
-
-- Update WSO2 API Manager URLs and credentials
-
-Update API Manager URLs and credentials for OAuth2 token validation - install/adapter-artifacts/wso2-adapter.yaml
-
-```
-apim-url: https://wso2-apim:9443      
-server-token: YWRtaW46YWRtaW4=  (Base 64 encoded username:password)
-```
-
-You can keep the apim-url as wso2-apim and update the IP address in install/adapter-artifacts/wso2-host-mapping.yaml file.
-
-```
-ip: <IP_ADDRESS> 
-```
-
-**Note:** Hostname verification is disabled by default for OAuth2 token validation service call. You can enable by changing the config in install/adapter-artifacts/wso2-operator-config.yaml
-```
-disable_hostname_verification: "false"
-```
-
-- Update API Manager Analytics endpoints for gRPC event publishing for analytics - install/adapter-artifacts/wso2-operator-config.yaml
-
-```
-request_stream_app_url: "wso2-apim:7575"             
-fault_stream_app_url: "wso2-apim:7576"               
-throttle_stream_app_url: "wso2-apim:7577"
-```
-
-**Note:** 7575, 7576, 7577 are gRPC ports used for data publishing.
 
 - Deploy the wso2-adapter as a cluster service
 
@@ -174,7 +141,8 @@ Note: In Docker for Mac INGRESS_GATEWAY_PORT is port 80.
 
 ### Apply API Management for microservices
 
-We are going to secure the service and this can be done with OAuth2 tokens or JWT tokens. Also, do the subscription validation for the API and scope validation for the resources.
+We are going to secure the service and this can be done with OAuth2 tokens or JWT tokens. 
+Also, do the subscription validation for the API and scope validation for the resources.
 
 ##### Create and publish an API in WSO2 API Manager Publisher
 
@@ -193,37 +161,7 @@ Add the following resources with these scopes.
 | /delay/{delay}        | -                |  
 | /status/{status_code} | -                |  
 
-
-##### Bind the API to the service for subscription validation and scope validation.
-
-```
-kubectl create -f samples/httpbin/api.yaml
-```
-
-**Note:** You can map the API with the service mesh service by changing the following values in samples/httpbin/api.yaml
-
-- api.service : name of the API              
-- api.version : version of the API           
-- api.context : context of the API          
-- resource.scope : scope of the resource     
-- service : mesh service 
-
-The above values are used in the following verifications.
-
-| Attribute Value | Use Case         | 
-|:--------------- |:---------------- |
-| api.service     | JWT              | 
-| api.version     | JWT and OAuth2   | 
-| api.context     | OAuth2           | 
-| resource.scope  | JWT              | 
-
-##### Deploy the rule to apply the mixer adapter for incoming requests
-
-```
-kubectl create -f samples/httpbin/rule.yaml
-```
-
-**Note:** This rule applies for any incoming request in the default namespace. 
+**Note:** When you create an API, API Manager automatically creates and deploy Istio resources for the API.
 
 ##### Access the Service
 
@@ -263,9 +201,13 @@ curl http://${INGRESS_GATEWAY_HOST}:{INGRESS_GATEWAY_PORT}/headers -H "Authoriza
 ### Cleanup
 
 ```
-kubectl delete -f samples/httpbin
+kubectl delete -f samples/httpbin/
 kubectl delete -f install/adapter-artifacts/
 kubectl delete secrets server-cert -n istio-system
+kubectl delete -f install/analytics/k8s-artifacts/
+kubectl delete -f install/api-manager/k8s-artifacts/
+kubectl delete configmap apim-conf -n wso2
+kubectl delete configmap apim-lifecycles -n wso2
 ```
 
 ### Troubleshooting Guide

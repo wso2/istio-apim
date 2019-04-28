@@ -29,7 +29,7 @@
     <modules>
         <module>orbit</module>
         <module>custom-executor</module>
-        <module>distribution</module>
+        <module>docker</module>
     </modules>
 
     <dependencyManagement>
@@ -148,6 +148,11 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>com.spotify</groupId>
+                    <artifactId>dockerfile-maven-plugin</artifactId>
+                    <version>${spotify.docker.plugin.version}</version>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.8.0</version>
@@ -196,8 +201,6 @@
                         <xmlOutput>true</xmlOutput>
                         <findbugsXmlOutputDirectory>${project.build.directory}/findbugs
                         </findbugsXmlOutputDirectory>
-                        <!--<excludeFilterFile>findbugs_exclude.xml</excludeFilterFile>-->
-                        <!--Exclude generated sources-->
                     </configuration>
                     <version>${maven.findbugsplugin.version}</version>
                     <executions>
@@ -223,6 +226,9 @@
         <logging.interceptor.version>3.9.1.wso2v1</logging.interceptor.version>
         <okhttp.version>3.9.1.wso2v1</okhttp.version>
         <okio.version>1.13.0.wso2v1</okio.version>
+        <docker.repo.name>wso2am</docker.repo.name>
+        <docker.image.tag>2.6.0-v1.0</docker.image.tag>
+        <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
     </properties>
 
 </project>

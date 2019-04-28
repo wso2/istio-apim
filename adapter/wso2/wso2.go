@@ -167,7 +167,8 @@ func (s *Wso2) HandleAuthorization(ctx context.Context, r *authorization.HandleA
 	endTime := time.Now().UnixNano() / int64(time.Millisecond)
 	serviceTime := endTime - startTime
 	tokenData.serviceTime = serviceTime
-	GlobalCache.Set(accessToken, &tokenData, cache.DefaultExpiration)
+	cacheKey := accessToken + "-" + apiName
+	GlobalCache.Set(cacheKey, &tokenData, cache.DefaultExpiration)
 
 	if err != nil {
 
@@ -284,7 +285,10 @@ func getRequests(in []*metric.InstanceMsg) (map[int]Request, map[int]Request) {
 		var tokenDataValues *TokenData
 		var serviceTime = int64(0)
 
-		if tokenData, found := GlobalCache.Get(accessToken[1]); found {
+		apiName := dimensions["api_name"].(string)
+		cacheKey := accessToken[1] + "-" + apiName
+
+		if tokenData, found := GlobalCache.Get(cacheKey); found {
 			tokenDataValues = tokenData.(*TokenData)
 
 			if !tokenDataValues.authorized {
@@ -307,10 +311,15 @@ func getRequests(in []*metric.InstanceMsg) (map[int]Request, map[int]Request) {
 		}
 
 		apiContext := dimensions["api_context"].(string)
-		apiName := dimensions["api_name"].(string)
 		apiVersion := dimensions["api_version"].(string)
 		apiResourcePath := dimensions["resource_path"].(string)
 		apiResourceTemplate := dimensions["resource_path_template"].(string)
+
+		if len(apiResourceTemplate) > 0 && apiResourceTemplate[0] == '"' &&
+			apiResourceTemplate[len(apiResourceTemplate)-1] == '"' {
+			apiResourceTemplate = apiResourceTemplate[1 : len(apiResourceTemplate)-1]
+		}
+
 		apiMethod := dimensions["request_method"].(string)
 		apiHostname := dimensions["request_host"].(string)
 		// ipaddress
