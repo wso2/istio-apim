@@ -39,10 +39,8 @@ spec:
           resources:
             limits:
               memory: "4Gi"
-              cpu: "2000m"
             requests:
               memory: "4Gi"
-              cpu: "2000m"
           livenessProbe:
             exec:
               command:
