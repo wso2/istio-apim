@@ -208,7 +208,7 @@ When accessing the service, provide the authorization header as follows.
 curl http://${INGRESS_GATEWAY_HOST}:{INGRESS_GATEWAY_PORT}/headers -H "Authorization: Bearer OAuth2_ACCESS_TOKEN"
 ```
 
-##### Access Analytics
+##### Access Analytics for Business Insights
 
 - Access WSO2 API Manager Publisher and Store for analytics
 
