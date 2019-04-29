@@ -61,6 +61,7 @@ Using WSO2 adapter, users can do the following.
 - The docker image of the WSO2 mixer adapter is available in the [docker hub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
 - In the default profile of Istio installation, the policy check is disabled by default. To use the mixer adapter, the policy check has to enable explicitly. Please follow [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 - wso2am-istio-1.0.zip contains installation artifacts to deploy in the Istio, WSO2 API Manager and WSO2 API Manager Analytics.
+- Make sure the Kubernetes cluster has at least 8GB of memory.
 
 #### Install WSO2 API Manager Analytics
 
