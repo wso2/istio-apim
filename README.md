@@ -85,6 +85,20 @@ kubectl create configmap apim-lifecycles --from-file=./install/api-manager/resou
 kubectl apply -f install/api-manager/k8s-artifacts/
 ```
 
+- Access WSO2 API Manager
+
+WSO2 API Manager is exposed as NodePort service type. Hence you can use any K8s node IP to access.
+Add the node IP to /etc/hosts file as follows.
+
+```
+<K8s_NODE_IP> wso2apim
+```
+
+To access...
+```
+https://wso2apim:32001/publisher
+```
+
 #### Install WSO2 Istio Mixer Adapter
 
 - Create a K8s secret in istio-system namespace for the public certificate of WSO2 API Manager as follows.
