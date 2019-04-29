@@ -38,9 +38,9 @@ spec:
           image: pubudu/analytics-worker:2.6.0-v1.0
           resources:
             limits:
-              memory: "4Gi"
+              memory: "2Gi"
             requests:
-              memory: "4Gi"
+              memory: "2Gi"
           livenessProbe:
             exec:
               command:
