@@ -47,7 +47,7 @@ spec:
                 - /bin/sh
                 - -c
                 - nc -z localhost 7712
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             exec:
@@ -55,7 +55,7 @@ spec:
                 - /bin/sh
                 - -c
                 - nc -z localhost 7712
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 10
           lifecycle:
             preStop:
