@@ -227,7 +227,7 @@ kubectl delete configmap apim-lifecycles -n wso2
 
 ### Advanced Guide 
 
-You can customize and deploy WSO2 Servers by following [this guide](https://github.com/pubudu538/istio-apim/tree/master/install#advanced-guide).
+You can customize and deploy WSO2 Servers by following [this guide](https://github.com/wso2/istio-apim/tree/master/install#advanced-guide).
 
 ### Troubleshooting Guide
 

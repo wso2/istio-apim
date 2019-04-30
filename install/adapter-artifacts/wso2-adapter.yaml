@@ -61,7 +61,7 @@ spec:
     spec:
       containers:
       - name: wso2adapter
-        image: pubudu/apim-istio-mixer-adapter:1.0
+        image: wso2/apim-istio-mixer-adapter:1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 44225
