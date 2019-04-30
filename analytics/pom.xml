@@ -22,14 +22,14 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>org.wso2.apim.components</artifactId>
     <groupId>org.wso2.apim</groupId>
-    <version>0.8</version>
+    <version>1.0</version>
     <name>WSO2 APIM gRPC Telemetry Receiver Components</name>
     <packaging>pom</packaging>
 
     <modules>
         <module>orbit</module>
         <module>core</module>
-        <module>distribution</module>
+        <module>docker</module>
     </modules>
 
     <dependencyManagement>
@@ -178,8 +178,14 @@
     </pluginRepositories>
 
     <build>
+
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>com.spotify</groupId>
+                    <artifactId>dockerfile-maven-plugin</artifactId>
+                    <version>${spotify.docker.plugin.version}</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -229,8 +235,6 @@
                         <xmlOutput>true</xmlOutput>
                         <findbugsXmlOutputDirectory>${project.build.directory}/findbugs
                         </findbugsXmlOutputDirectory>
-                        <!--<excludeFilterFile>findbugs_exclude.xml</excludeFilterFile>-->
-                        <!--Exclude generated sources-->
                     </configuration>
                     <version>${maven.findbugsplugin.version}</version>
                     <executions>
@@ -258,6 +262,9 @@
         <grpc.orbit.version>1.15.0.wso2v1</grpc.orbit.version>
         <protobuf.orbit.version>3.6.1.wso2v1</protobuf.orbit.version>
         <protoc.version>3.5.1</protoc.version>
+        <docker.repo.name>wso2am</docker.repo.name>
+        <docker.image.tag>2.6.0-v1.0</docker.image.tag>
+        <spotify.docker.plugin.version>1.4.10</spotify.docker.plugin.version>
     </properties>
 
 </project>

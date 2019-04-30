@@ -5,16 +5,18 @@ This guide is for compiling the source code for analytics.
 ##### Prerequisites
 
 - Maven
+- Docker
 
-
-##### Compile source code
+##### Compile source code and build the docker image
 
 ```
 mvn clean install
 ```
 
-##### Copy generated jars to install location
+**Note:**
 
-```
-cp ./distribution/target/files/lib/* ./../install/analytics/lib/
-```
+When you build the source code,
+
+1. Creates the docker image
+2. Copy jar files to install/analytics/resources/lib location
+

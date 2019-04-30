@@ -130,6 +130,11 @@ func HandleOauth2AccessToken(serverToken string, serverCert []byte, apimUrl stri
 	url := apimUrl + soapServiceUrl //api-manager endpoint URL
 	name := &RequestData{Version: version, Var2: soapDefinition}
 
+	if len(resource) > 0 && resource[0] == '"' &&
+		resource[len(resource)-1] == '"' {
+		resource = resource[1 : len(resource)-1]
+	}
+
 	name.Svs = append(name.Svs, soapBody{apiContext, apiVersion, accessToken,
 		"Any", "?", resource, httpMethod})
 

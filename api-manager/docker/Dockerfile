@@ -1,0 +1,25 @@
+# ------------------------------------------------------------------------
+#
+# Copyright 2019 WSO2, Inc. (http://wso2.com)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License
+#
+# ------------------------------------------------------------------------
+
+# set to product base image
+FROM wso2/wso2am:2.6.0
+
+ARG API_MANAGER_FILES=./target/files
+
+COPY --chown=wso2carbon:wso2 ${API_MANAGER_FILES}/lib/*.jar ${WSO2_SERVER_HOME}/repository/components/dropins/
+COPY --chown=wso2carbon:wso2 ${API_MANAGER_FILES}/non-osgi/*.jar ${WSO2_SERVER_HOME}/repository/components/lib/

@@ -29,9 +29,9 @@ spec:
  params:
    validate_subscription: "true"
    disable_hostname_verification: "true"
-   request_stream_app_url: "wso2-apim:7575"              # FIX ME: API Manager Analytics IP Address/ Hostname
-   fault_stream_app_url: "wso2-apim:7576"                # FIX ME: API Manager Analytics IP Address/ Hostname
-   throttle_stream_app_url: "wso2-apim:7577"             # FIX ME: API Manager Analytics IP Address/ Hostname
+   request_stream_app_url: "wso2apim-with-analytics-apim-analytics-service.wso2:7575"              # FIX ME: API Manager Analytics IP Address/ Hostname
+   fault_stream_app_url: "wso2apim-with-analytics-apim-analytics-service.wso2:7576"                # FIX ME: API Manager Analytics IP Address/ Hostname
+   throttle_stream_app_url: "wso2apim-with-analytics-apim-analytics-service.wso2:7577"             # FIX ME: API Manager Analytics IP Address/ Hostname
    grpc_pool_size: "5"
    grpc_pool_initial_size: "1"
 ---
@@ -49,7 +49,7 @@ spec:
        api_name: api.service | ""
        api_version: api.version | ""
        api_context: api.context | ""
-       request_path: request.path | ""
+       resource_path: request.url_path | ""
        request_method: request.method | ""
        request_resource: api.operation | ""
        request_scope: resource.scope | ""
@@ -59,7 +59,7 @@ spec:
 apiVersion: "config.istio.io/v1alpha2"
 kind: instance
 metadata:
-  name: wso2-metric
+  name: wso2-metrics
   namespace: istio-system
 spec:
   template: metric

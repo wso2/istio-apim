@@ -78,7 +78,6 @@ cp $MIXER_REPO/template/authorization/template.yaml $MIXER_REPO/adapter/wso2/ins
 cp $MIXER_REPO/template/metric/template.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/metric-template.yaml
 cp $ROOT_FOLDER/../install/adapter-artifacts/wso2-operator-config.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
 cp $ROOT_FOLDER/../install/adapter-artifacts/wso2-adapter.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
-cp $ROOT_FOLDER/../install/adapter-artifacts/wso2-host-mapping.yaml $MIXER_REPO/adapter/wso2/install/adapter-artifacts/
 ```
 
 Note: template.yaml is taken from the Istio repository. attributes, wso2-operator-config.yaml and wso2-adapter is taken from istio-apim repo.
@@ -97,7 +96,7 @@ cp $ROOT_FOLDER/wso2/cmd/main.go $MIXER_REPO/adapter/wso2/cmd/
 ```
 cd $ROOT_FOLDER
 
-docker build -t wso2/apim-istio-mixer-adapter:0.8 .
+docker build -t wso2/apim-istio-mixer-adapter:1.0 .
 ```
 
 Note: Push this docker image to a docker registry which can be accessed from the Kubernetes cluster.
