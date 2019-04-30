@@ -165,7 +165,8 @@ Log into WSO2 API Manager publisher and create an API with the following details
 
 - API Name : HttpbinAPI
 - API Context : /httpbin
-- API Version: 1.0.0 
+- API Version : 1.0.0 
+- Production Endpoint : http://httpbin.default.svc.cluster.local
 
 Add the following resources with these scopes.
 
@@ -176,7 +177,13 @@ Add the following resources with these scopes.
 | /delay/{delay}        | -                |  
 | /status/{status_code} | -                |  
 
-**Note:** When you create an API, API Manager automatically creates and deploy Istio resources for the API.
+**Note:** 
+
+1. Make sure you provide the production endpoint for the API in the following pattern.
+```
+http://<SERVICE_NAME>.<NAMESPACE_OF_THE_SERVICE>.svc.cluster.local
+```
+2. When you create an API, API Manager automatically creates and deploy Istio resources for the API.
 
 ##### Access the Service
 
