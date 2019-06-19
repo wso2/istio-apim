@@ -60,18 +60,18 @@ Using WSO2 adapter, users can do the following.
 -   In the default profile of Istio installation, the policy check is disabled by default. However, in a production environment it is mandatory to use the Mixer Adapter; therefore, in such a scenario you need to explicitly enable the policy check. For more information, see [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
 
 #### Step 2 - Install WSO2 API Manager Analytics
-1. Install [Istio-apim release: wso2am-istio-1.0.zip](https://github.com/wso2/istio-apim/releases/tag/1.0).
+1. Install [Istio-apim release: wso2am-istio-1.0.zip](https://github.com/wso2/istio-apim/releases/tag/1.0).    
 The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy in Istio, WSO2 API Manager, and WSO2 API Manager Analytics as explained in the subsequent steps.
-2. Extract wso2am-istio-1.0.zip and navigate to the <APIM-ISTIO-HOME>/ directory.
+2. Extract wso2am-istio-1.0.zip and navigate to the \<APIM-ISTIO-HOME>/ directory.      
    `
    cd <APIM-ISTIO-HOME>/
    `
-   **Note:** You need to run all `kubectl` commands from within the <APIM-ISTIO-HOME>/ directory.
-3. Deploy Kubenetes (K8s) artifacts for Analytics.
+   **Note:** You need to run all `kubectl` commands from within the \<APIM-ISTIO-HOME>/ directory.
+3. Deploy Kubenetes (K8s) artifacts for Analytics.    
     `
     kubectl apply -f <config-file-path>
     `
-    - <config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.
+    - \<config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.
  
     `kubectl apply -f install/analytics/k8s-artifacts/`
 
@@ -84,7 +84,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
       ```
 #### Step 3 - Install WSO2 API Manager
 
-1.  Deploy the required config maps for WSO2 API Manager.
+1.  Deploy the required config maps for WSO2 API Manager.      
     `
     kubectl create configmap <configmap-name> --from-file=<key-file-path> -n <namespace>
     `
@@ -99,7 +99,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
       configmap "apim-conf" created
       configmap "apim-lifecycles" created
       ``` 
-2.  Deploy K8s artifacts for WSO2 API Manager.
+2.  Deploy K8s artifacts for WSO2 API Manager.     
     `
     kubectl apply -f <config-file-path>
     `
@@ -117,8 +117,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
       deployment.apps "wso2apim-with-analytics-apim" created
       service "wso2apim-with-analytics-apim-service" created
       ``` 
-      
-4.  Access WSO2 API Manager.
+3.  Access WSO2 API Manager.     
     WSO2 API Manager is exposed as NodePort service type. Therefore, you can use any K8s node IP to access it. 
     1.  Add the node IP to the /etc/hosts file as follows:
         `
