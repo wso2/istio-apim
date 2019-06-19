@@ -57,7 +57,7 @@ Using WSO2 adapter, users can do the following.
 #### Step 1 - Install [Istio 1.1 or above](https://istio.io/docs/setup/kubernetes/install/)
 **NOTE:** 
 - Make sure the Kubernetes (K8s) cluster has at least 8GB of memory.
--   In the default profile of Istio installation, the policy check is disabled by default. However, in a production environment it is mandatory to use the Mixer Adapter; therefore, in such a scenario you need to explicitly enable the policy check. For more information, see [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/)
+-   In the default profile of Istio installation, the policy check is disabled by default. However, in a production environment it is mandatory to use the Mixer Adapter; therefore, in such a scenario you need to explicitly enable the policy check. For more information, see [Enable Policy Enforcement](https://istio.io/docs/tasks/policy-enforcement/enabling-policy/).
 
 #### Step 2 - Install WSO2 API Manager Analytics
 1. Install [Istio-apim release: wso2am-istio-1.0.zip](https://github.com/wso2/istio-apim/releases/tag/1.0).    
@@ -148,9 +148,9 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `    
     - \<key-file> - Enter the path and name of the key file.      
     
-    `
+    ```
     kubectl create secret generic server-cert --from-file=./install/adapter-artifacts/server.pem -n istio-system
-    `    
+    ```     
     **NOTE:** The public certificate for the WSO2 API Manager 2.6.0 GA release is in the install/adapter-artifacts/server.pem file.    
     
       **Output**     
@@ -231,9 +231,10 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `    
 
     - Use the output of the following command as the \<ingress_gateway_port> value.    
-    `
+    
+    ```
     kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}'
-    `    
+    ```     
     **NOTE:** If you are using a Mac OS and you are running Istio under Docker for desktop’s built-in Kubernetes, the \<ingress_gateway_port> value will always be port 80.      
 
     **Output**    
@@ -288,9 +289,9 @@ You can access the service either using a JWT token or an OAuth2 token as follow
     2. Subscribe to the API (httpbinAPI) by selecting the application that you created.      
     3. Select the relevant scopes and generate an access token.      
     4. Access the service by providing the authorization header as follows:      
-        `
+        ```
         curl http://$<ingress_gateway_host>:<ingress_gateway_port>/headers -H "Authorization: Bearer <JWT_access_token>"
-        `      
+        ```    
         
     **Output**    
     ```
@@ -310,14 +311,14 @@ You can access the service either using a JWT token or an OAuth2 token as follow
         }
     ```     
     
--   **Using an OAuth2 token to access the service**      
-        1. Create an application by selecting OAuth2 as the **Token Type**.      
-        2. Subscribe to the API (httpbinAPI) by selecting the application that you created.     
-        3. When generating the token, select the relevant scopes and generate an access token.     
-        4. When accessing the service, provide the authorization header as follows:    
-        `
-        curl http://$<ingress_gateway_host>:<ingress_gateway_port>/headers -H "Authorization: Bearer <OAuth2_access_token>"
-        `      
+- **Using an OAuth2 token to access the service**      
+    1. Create an application by selecting OAuth2 as the **Token Type**.      
+    2. Subscribe to the API (httpbinAPI) by selecting the application that you created.     
+    3. When generating the token, select the relevant scopes and generate an access token.     
+    4. When accessing the service, provide the authorization header as follows:          
+       
+      curl http://$<ingress_gateway_host>:<ingress_gateway_port>/headers -H "Authorization: Bearer <OAuth2_access_token>"
+              
         
     **Output**    
     ```
