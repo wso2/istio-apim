@@ -65,7 +65,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
 2. Extract wso2am-istio-1.0.zip and navigate to the \<APIM-ISTIO-HOME>/ directory.      
    `
    cd <APIM-ISTIO-HOME>/
-   `
+   `     
    **Note:** You need to run all `kubectl` commands from within the \<APIM-ISTIO-HOME>/ directory.
 3. Deploy Kubenetes (K8s) artifacts for Analytics.    
     `
@@ -88,7 +88,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `
     kubectl create configmap <configmap-name> --from-file=<key-file-path> -n <namespace>
     `
-    - <key-file-path> - You can specify the key file by using its file path.
+    - \<key-file-path> - You can specify the key file by using its file path.
     
     ```
     kubectl create configmap apim-conf --from-file=./install/api-manager/resources/conf/ -n wso2
@@ -103,7 +103,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `
     kubectl apply -f <config-file-path>
     `
-    - <config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.
+    - \<config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.
     
     `
     kubectl apply -f install/api-manager/k8s-artifacts/
@@ -119,11 +119,11 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
       ``` 
 3.  Access WSO2 API Manager.     
     WSO2 API Manager is exposed as NodePort service type. Therefore, you can use any K8s node IP to access it. 
-    1.  Add the node IP to the /etc/hosts file as follows:
+    1.  Add the node IP to the \/etc/hosts file as follows:
         `
         <K8s_node_ip> wso2apim
         `
-        - <K8s_node_ip> - Run the following command to identify this IP. This IP should be the EXTERNAL-IP value mentioned for istio-ingressgateway.
+        - \<K8s_node_ip> - Run the following command to identify this IP. This IP should be the EXTERNAL-IP value mentioned for istio-ingressgateway.
             `
             kubectl get svc istio-ingressgateway -n istio-system
             `
@@ -146,7 +146,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `
     kubectl create secret generic <secret-name> --from-file=<key-file> -n istio-system
     `
-    - <key-file> - Enter the path and name of the key file.
+    - \<key-file> - Enter the path and name of the key file.
     
     `
     kubectl create secret generic server-cert --from-file=./install/adapter-artifacts/server.pem -n istio-system
@@ -162,7 +162,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `
     kubectl apply -f <config-file-path>
     `
-    - <config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.
+    - \<config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.
 
     `
     kubectl apply -f install/adapter-artifacts/
@@ -195,7 +195,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `
     kubectl create -f <config-file>
     `
-    - <config-file> - Enter the filename, directory, or URL to the files that you need to use to create the resource.
+    - \<config-file> - Enter the filename, directory, or URL to the files that you need to use to create the resource.
 
     `
     kubectl create -f samples/httpbin/httpbin.yaml
@@ -209,7 +209,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     `
     kubectl create -f <config-file>
     `
-    - <config-file> - Enter the filename, directory, or URL to the files that you need to use to create the resource.
+    - \<config-file> - Enter the filename, directory, or URL to the files that you need to use to create the resource.
 
    `
     kubectl create -f samples/httpbin/httpbin-gw.yaml
@@ -224,18 +224,18 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     curl http://$<ingress_gateway_host>:<ingress_gateway_port>/headers
     `
     
-    You can identify the value of the <ingress_gateway_host> and <ingress_gateway_port> as follows. 
+    You can identify the value of the \<ingress_gateway_host> and \<ingress_gateway_port> as follows. 
     For more information, go to the [Istio guide](https://istio.io/docs/tasks/traffic-management/ingress/#determining-the-ingress-ip-and-ports).
-    - Use EXTERNAL-IP as the <ingress_gateway_host> based on the output of the following command.
+    - Use EXTERNAL-IP as the \<ingress_gateway_host> based on the output of the following command.
     `
     kubectl get svc istio-ingressgateway -n istio-system
     `
 
-    - Use the output of the following command as the <ingress_gateway_port> value.
+    - Use the output of the following command as the \<ingress_gateway_port> value.
     `
     kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}'
     `
-    **NOTE:** If you are using a Mac OS and you are running Istio under Docker for desktop’s built-in Kubernetes, the <ingress_gateway_port> value will always be port 80. 
+    **NOTE:** If you are using a Mac OS and you are running Istio under Docker for desktop’s built-in Kubernetes, the \<ingress_gateway_port> value will always be port 80. 
 
     **Output**
     ```
@@ -261,14 +261,14 @@ You need to secure the service by either using OAuth2 or JWT tokens.
 In addition, you need to also validate the subscription for the API and validate the scope for the resources.
 
 ##### Step 6.1 - Create and publish an API in WSO2 API Manager Publisher
-1. Sign in to WSO2 API Manager Publisher and create a REST API with the following details.
+1. Sign in to WSO2 API Manager Publisher and create a REST API with the following details.      
    For more information, go to [Create and Publish an API](https://docs.wso2.com/display/AM260/Create+and+Publish+an+API) in the WSO2 API Manager documentation.
     - API Name : HttpbinAPI
     - API Context : /httpbin
     - API Version : 1.0.0 
-    - Production Endpoint : http://httpbin.default.svc.cluster.local
-        Make sure you provide the production endpoint for the API in the following format.
-        `http://<service_name>.<namespace_of_the_service>.svc.cluster.local`
+    - Production Endpoint : http://httpbin.default.svc.cluster.local    
+      Make sure you provide the production endpoint for the API in the following format.     
+      `http://<service_name>.<namespace_of_the_service>.svc.cluster.local`
 
     Add the following resources with these scopes.
     **NOTE:** When adding a scope, it is mandatory to select a role that corresponds to the scope. 
