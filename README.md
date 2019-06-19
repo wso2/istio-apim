@@ -107,7 +107,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
     
     `
     kubectl apply -f install/api-manager/k8s-artifacts/
-    `
+    `    
       **Output**
       ``` 
       namespace "wso2" configured
@@ -119,54 +119,53 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
       ``` 
 3.  Access WSO2 API Manager.     
     WSO2 API Manager is exposed as NodePort service type. Therefore, you can use any K8s node IP to access it. 
-    1.  Add the node IP to the \/etc/hosts file as follows:
+    1.  Add the node IP to the \/etc/hosts file as follows:    
         `
         <K8s_node_ip> wso2apim
         `
-        - \<K8s_node_ip> - Run the following command to identify this IP. This IP should be the EXTERNAL-IP value mentioned for istio-ingressgateway.
+        - \<K8s_node_ip> - Run the following command to identify this IP. This IP should be the EXTERNAL-IP value mentioned for istio-ingressgateway.    
             `
             kubectl get svc istio-ingressgateway -n istio-system
             `
-    2. Access WSO2 API Manager.
-        **Publisher**
+    2. Access WSO2 API Manager.     
+        **Publisher**      
         ```
         https://wso2apim:32001/publisher
-        ```
-        **Store**
+        ```    
+        **Store**    
         ```
         https://wso2apim:32001/store
-        ```
-        **Admin**
+        ```    
+        **Admin**    
         ```
         https://wso2apim:32001/admin
         ```
 #### Step 4 - Install WSO2 Istio Mixer Adapter
 
-1. Create a K8s secret in the istio-system namespace for the public certificate of WSO2 API Manager as follows:
+1. Create a K8s secret in the istio-system namespace for the public certificate of WSO2 API Manager as follows:      
     `
     kubectl create secret generic <secret-name> --from-file=<key-file> -n istio-system
-    `
-    - \<key-file> - Enter the path and name of the key file.
+    `    
+    - \<key-file> - Enter the path and name of the key file.      
     
     `
     kubectl create secret generic server-cert --from-file=./install/adapter-artifacts/server.pem -n istio-system
-    `
-    **NOTE:** The public certificate for the WSO2 API Manager 2.6.0 GA release is in the install/adapter-artifacts/server.pem file.
+    `    
+    **NOTE:** The public certificate for the WSO2 API Manager 2.6.0 GA release is in the install/adapter-artifacts/server.pem file.    
     
-      **Output**
+      **Output**     
       ``` 
       secret "server-cert" created
       ``` 
-2. Deploy the wso2-adapter as a cluster service.
-    The Docker image of WSO2 Mixer Adapter, which is referred to when deploying this cluster service, is available in [DockerHub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).
+2. Deploy the wso2-adapter as a cluster service.      
+    The Docker image of WSO2 Mixer Adapter, which is referred to when deploying this cluster service, is available in [DockerHub](https://hub.docker.com/r/wso2/apim-istio-mixer-adapter).      
     `
     kubectl apply -f <config-file-path>
-    `
-    - \<config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.
-
+    `    
+    - \<config-file-path> - Enter the filename, directory, or URL to the files that contains the configuration that you need to apply.    
     `
     kubectl apply -f install/adapter-artifacts/
-    `
+    `    
     
       **Output**
       ``` 
@@ -183,61 +182,61 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
         adapter.config.istio.io "wso2" created
       ``` 
 ### Step 5 - Deploy a microservice in Istio
-1. Enable Istio sidecar injection for the default namespace if it not already enabled.
+1. Enable Istio sidecar injection for the default namespace if it not already enabled.    
     `
     kubectl label namespace default istio-injection=enabled
-    `
-      **Output**
+    `    
+      **Output**     
       ``` 
     namespace "default" labeled
-      ``` 
-2. Deploy the httpbin sample service.
+      ```      
+2. Deploy the httpbin sample service.     
     `
     kubectl create -f <config-file>
-    `
+    `    
     - \<config-file> - Enter the filename, directory, or URL to the files that you need to use to create the resource.
 
     `
     kubectl create -f samples/httpbin/httpbin.yaml
-    `
-      **Output**
+    `    
+      **Output**     
       ``` 
         service "httpbin" created
         deployment.apps "httpbin" created
       ``` 
-3. Expose the httpbin sample service via Istio ingress gateway to be able to access it from outside.
+3. Expose the httpbin sample service via Istio ingress gateway to be able to access it from outside.     
     `
     kubectl create -f <config-file>
-    `
-    - \<config-file> - Enter the filename, directory, or URL to the files that you need to use to create the resource.
+    `    
+    - \<config-file> - Enter the filename, directory, or URL to the files that you need to use to create the resource.     
 
    `
     kubectl create -f samples/httpbin/httpbin-gw.yaml
-    `
-      **Output**
+    `    
+      **Output**     
       ``` 
         gateway.networking.istio.io "httpbin-gateway" created
         virtualservice.networking.istio.io "httpbin" created
       ``` 
-4.  Access the httpbin sample service via Istio ingress gateway.
+4.  Access the httpbin sample service via Istio ingress gateway.     
     `
     curl http://$<ingress_gateway_host>:<ingress_gateway_port>/headers
-    `
+    `    
     
-    You can identify the value of the \<ingress_gateway_host> and \<ingress_gateway_port> as follows. 
-    For more information, go to the [Istio guide](https://istio.io/docs/tasks/traffic-management/ingress/#determining-the-ingress-ip-and-ports).
-    - Use EXTERNAL-IP as the \<ingress_gateway_host> based on the output of the following command.
+    You can identify the value of the \<ingress_gateway_host> and \<ingress_gateway_port> as follows.       
+    For more information, go to the [Istio guide](https://istio.io/docs/tasks/traffic-management/ingress/#determining-the-ingress-ip-and-ports).      
+    - Use EXTERNAL-IP as the \<ingress_gateway_host> based on the output of the following command.    
     `
     kubectl get svc istio-ingressgateway -n istio-system
-    `
+    `    
 
-    - Use the output of the following command as the \<ingress_gateway_port> value.
+    - Use the output of the following command as the \<ingress_gateway_port> value.    
     `
     kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}'
-    `
-    **NOTE:** If you are using a Mac OS and you are running Istio under Docker for desktop’s built-in Kubernetes, the \<ingress_gateway_port> value will always be port 80. 
+    `    
+    **NOTE:** If you are using a Mac OS and you are running Istio under Docker for desktop’s built-in Kubernetes, the \<ingress_gateway_port> value will always be port 80.      
 
-    **Output**
+    **Output**    
     ```
       {
         "headers": {
@@ -252,26 +251,26 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
         "X-Envoy-Internal": "true"
         }
     }
-    ```
+    ```     
 
 
-### Step 6 - Apply API Management for microservices
+### Step 6 - Apply API Management for microservices      
 
-You need to secure the service by either using OAuth2 or JWT tokens. 
-In addition, you need to also validate the subscription for the API and validate the scope for the resources.
+You need to secure the service by either using OAuth2 or JWT tokens.       
+In addition, you need to also validate the subscription for the API and validate the scope for the resources.     
 
-##### Step 6.1 - Create and publish an API in WSO2 API Manager Publisher
-1. Sign in to WSO2 API Manager Publisher and create a REST API with the following details.      
-   For more information, go to [Create and Publish an API](https://docs.wso2.com/display/AM260/Create+and+Publish+an+API) in the WSO2 API Manager documentation.
+##### Step 6.1 - Create and publish an API in WSO2 API Manager Publisher      
+1. Sign in to WSO2 API Manager Publisher and create a REST API with the following details.           
+   For more information, go to [Create and Publish an API](https://docs.wso2.com/display/AM260/Create+and+Publish+an+API) in the WSO2 API Manager documentation.     
     - API Name : HttpbinAPI
     - API Context : /httpbin
     - API Version : 1.0.0 
     - Production Endpoint : http://httpbin.default.svc.cluster.local    
       Make sure you provide the production endpoint for the API in the following format.     
-      `http://<service_name>.<namespace_of_the_service>.svc.cluster.local`
+      `http://<service_name>.<namespace_of_the_service>.svc.cluster.local`    
 
-    Add the following resources with these scopes.
-    **NOTE:** When adding a scope, it is mandatory to select a role that corresponds to the scope. 
+    Add the following resources with these scopes.    
+    **NOTE:** When adding a scope, it is mandatory to select a role that corresponds to the scope.       
 
     | Resource              | Request Type     | Scope            |  Scope - Role    | 
     |:--------------------- |:---------------- |:---------------- |:---------------- |
@@ -282,17 +281,18 @@ In addition, you need to also validate the subscription for the API and validate
 
    When you create an API, WSO2 API Manager automatically creates and deploy Istio resources for the API.
 
-#####  Step 6.2 - Access the Service
-You can access the service either using a JWT token or an OAuth2 token as follows:
-- **Using a JWT Token to access the service**
-    1. Sign in to WSO2 API Manager Publisher and create an application by selecting JWT as **Token Type**.
-    2. Subscribe to the API (httpbinAPI) by selecting the application that you created.
-    3. Select the relevant scopes and generate an access token.
-    4. Access the service by providing the authorization header as follows:
+#####  Step 6.2 - Access the Service      
+You can access the service either using a JWT token or an OAuth2 token as follows:     
+- **Using a JWT Token to access the service**      
+    1. Sign in to WSO2 API Manager Publisher and create an application by selecting JWT as **Token Type**.     
+    2. Subscribe to the API (httpbinAPI) by selecting the application that you created.      
+    3. Select the relevant scopes and generate an access token.      
+    4. Access the service by providing the authorization header as follows:      
         `
         curl http://$<ingress_gateway_host>:<ingress_gateway_port>/headers -H "Authorization: Bearer <JWT_access_token>"
-        `
-    **Output**
+        `      
+        
+    **Output**    
     ```
         {
           "headers": {
@@ -308,17 +308,18 @@ You can access the service either using a JWT token or an OAuth2 token as follow
             "X-Envoy-Internal": "true"
           }
         }
-    ``` 
+    ```     
     
--   **Using an OAuth2 token to access the service**
-        1. Create an application by selecting OAuth2 as the **Token Type**.
-        2. Subscribe to the API (httpbinAPI) by selecting the application that you created.
-        3. When generating the token, select the relevant scopes and generate an access token.
-        4. When accessing the service, provide the authorization header as follows:
+-   **Using an OAuth2 token to access the service**      
+        1. Create an application by selecting OAuth2 as the **Token Type**.      
+        2. Subscribe to the API (httpbinAPI) by selecting the application that you created.     
+        3. When generating the token, select the relevant scopes and generate an access token.     
+        4. When accessing the service, provide the authorization header as follows:    
         `
         curl http://$<ingress_gateway_host>:<ingress_gateway_port>/headers -H "Authorization: Bearer <OAuth2_access_token>"
-        `
-    **Output**
+        `      
+        
+    **Output**    
     ```
     {
       "headers": {
@@ -334,12 +335,12 @@ You can access the service either using a JWT token or an OAuth2 token as follow
         "X-Envoy-Internal": "true"
       }
     }
-    ```
+    ```     
 
-##### Step 6.3 - Access Analytics for Business Insights
-Access the WSO2 API Manager Publisher and Store for analytics.
+##### Step 6.3 - Access Analytics for Business Insights     
+Access the WSO2 API Manager Publisher and Store for analytics.    
 
-### Cleanup
+### Cleanup    
 
 ```
 kubectl delete -f samples/httpbin/
@@ -349,27 +350,31 @@ kubectl delete -f install/analytics/k8s-artifacts/
 kubectl delete -f install/api-manager/k8s-artifacts/
 kubectl delete configmap apim-conf -n wso2
 kubectl delete configmap apim-lifecycles -n wso2
-```
+```      
 
-### Advanced Guide 
+### Advanced Guide      
 
-You can customize and deploy WSO2 Servers by following [this guide](https://github.com/wso2/istio-apim/tree/master/install#advanced-guide).
+You can customize and deploy WSO2 Servers by following [this guide](https://github.com/wso2/istio-apim/tree/master/install#advanced-guide).     
 
-### Troubleshooting Guide
+### Troubleshooting Guide     
 
-- Figure out the pod name for wso2adapter.
+- Figure out the pod name for wso2adapter.      
 
     ```
     kubectl get pods -n istio-system -l app=wso2adapter
     ```
 
-- Browse the wso2adapter log.
+- Browse the wso2adapter log.    
 
     ```
     kubectl logs -f <pod_name> -n istio-system
-    ```
-- How can I overcome the following error?
-`Error from server (AlreadyExists): secrets "<cert-name>" already exists`
-This error occurs when you try to create another certificate with the same name in a namespace. To overcome this error you need to first delete the existing certificate and then add the new certificate, which has the same name. Run the following command to delete the existing certificate.
-        `kubectl delete secrets <cert-name> -n <namespace>`
-        `kubectl delete secrets server-cert -n istio-system`
+    ```     
+- How can I overcome the following error?    
+`Error from server (AlreadyExists): secrets "<cert-name>" already exists`     
+This error occurs when you try to create another certificate with the same name in a namespace. To overcome this error you need to first delete the existing certificate and then add the new certificate, which has the same name. Run the following command to delete the existing certificate.    
+        `
+        kubectl delete secrets <cert-name> -n <namespace>
+        `      
+        `
+        kubectl delete secrets server-cert -n istio-system
+        `      
