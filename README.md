@@ -123,10 +123,7 @@ The wso2am-istio-1.0.zip contains installation artifacts that you need to deploy
         `
         <K8s_node_ip> wso2apim
         `
-        - \<K8s_node_ip> - Run the following command to identify this IP. This IP should be the EXTERNAL-IP value mentioned for istio-ingressgateway.    
-            `
-            kubectl get svc istio-ingressgateway -n istio-system
-            `
+        
     2. Access WSO2 API Manager.     
         **Publisher**      
         ```
