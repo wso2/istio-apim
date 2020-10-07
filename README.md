@@ -1,3 +1,7 @@
+# Important Notice
+
+As the Istio community is moving away from the Mixer Adapter approach, WSO2 does not recommend to use the approach mentioned in this **istio-apim** github repository. The recommended approach for applying API Management in Istio service mesh is to use the API Operator for Kubernetes. Please refer [API Operator for Istio](https://github.com/wso2/k8s-api-operator/tree/master/scenarios/scenario-13)
+
 # Introduction
 
 WSO2 API Manager is a full lifecycle API Management solution which has an API Gateway and a Microgateway. Istio is a service mesh solution which helps users to deploy and manage a collection of microservices. Service meshes in their native form have an “API Management gap” that requires to be filled. These are related to exposing services to external consumers (advanced security, discovery, governance, etc.), business insights, policy enforcement, and monetization. This explains how WSO2 API Manager plans to integrate with Istio and manage services deployed in Istio as APIs. 
